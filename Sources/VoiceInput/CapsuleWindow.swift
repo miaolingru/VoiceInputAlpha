@@ -6,8 +6,6 @@ final class CapsuleWindowController {
     private var textLabel: NSTextField?
     private var refiningLabel: NSTextField?
     private var contentView: NSView?
-    private var textWidthConstraint: NSLayoutConstraint?
-    private var panelWidthConstraint: NSLayoutConstraint?
 
     private let capsuleHeight: CGFloat = 50
     private let cornerRadius: CGFloat = 25
@@ -18,8 +16,26 @@ final class CapsuleWindowController {
     private let maxTextWidth: CGFloat = 504
     private let horizontalPadding: CGFloat = 24
 
+    /// 动画起始/结束时的小胶囊宽度（正圆形）
+    private let pillWidth: CGFloat = 50
+
     private var isDynamicIsland: Bool {
         UserDefaults.standard.string(forKey: "animationStyle") != "minimal"
+    }
+
+    // MARK: - 计算目标帧
+
+    private func targetFrame(fullWidth: CGFloat, screenFrame: NSRect) -> NSRect {
+        NSRect(
+            x: screenFrame.midX - fullWidth / 2,
+            y: screenFrame.minY + 54,
+            width: fullWidth,
+            height: capsuleHeight
+        )
+    }
+
+    private func fullWidth(for textWidth: CGFloat) -> CGFloat {
+        textWidth + waveformWidth + waveformLeadingOffset + horizontalPadding * 2 + waveformTextGap
     }
 
     // MARK: - Show
@@ -27,14 +43,12 @@ final class CapsuleWindowController {
     func show() {
         if panel != nil { return }
 
-        let fullWidth: CGFloat = waveformWidth + waveformLeadingOffset + minTextWidth + horizontalPadding * 2 + waveformTextGap
         let screenFrame = NSScreen.main?.visibleFrame ?? .zero
-        let targetX = screenFrame.midX - fullWidth / 2
-        let targetY = screenFrame.minY + 54
-        let targetFrame = NSRect(x: targetX, y: targetY, width: fullWidth, height: capsuleHeight)
+        let fw = fullWidth(for: minTextWidth)
+        let target = targetFrame(fullWidth: fw, screenFrame: screenFrame)
 
         let panel = NSPanel(
-            contentRect: targetFrame,
+            contentRect: target,
             styleMask: [.nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -49,6 +63,7 @@ final class CapsuleWindowController {
         panel.titlebarAppearsTransparent = true
         panel.styleMask.remove(.titled)
 
+        // 内容容器
         let container = NSView()
         container.translatesAutoresizingMaskIntoConstraints = false
 
@@ -72,12 +87,12 @@ final class CapsuleWindowController {
         refLabel.isHidden = true
         container.addSubview(refLabel)
 
-        // minTextWidth 使用低优先级，允许在动画起始小帧时被违反
-        let textWidth = label.widthAnchor.constraint(greaterThanOrEqualToConstant: minTextWidth)
-        textWidth.priority = .defaultLow
-        let maxWidth   = label.widthAnchor.constraint(lessThanOrEqualToConstant: maxTextWidth)
-        let panelWidth = panel.contentView!.widthAnchor.constraint(equalToConstant: fullWidth)
+        // label 最小宽度低优先级——初始动画小帧时允许违反
+        let textMinWidth = label.widthAnchor.constraint(greaterThanOrEqualToConstant: minTextWidth)
+        textMinWidth.priority = .defaultLow
+        let textMaxWidth = label.widthAnchor.constraint(lessThanOrEqualToConstant: maxTextWidth)
 
+        // 背景：macOS 26 液态玻璃 / 旧系统毛玻璃
         if #available(macOS 26.0, *) {
             let glassView = NSGlassEffectView()
             glassView.cornerRadius = cornerRadius
@@ -123,10 +138,9 @@ final class CapsuleWindowController {
             label.leadingAnchor.constraint(equalTo: waveform.trailingAnchor, constant: waveformTextGap),
             label.trailingAnchor.constraint(equalTo: container.trailingAnchor),
             label.centerYAnchor.constraint(equalTo: container.centerYAnchor),
-            textWidth, maxWidth,
+            textMinWidth, textMaxWidth,
             refLabel.leadingAnchor.constraint(equalTo: waveform.trailingAnchor, constant: waveformTextGap),
             refLabel.centerYAnchor.constraint(equalTo: container.centerYAnchor),
-            panelWidth,
         ])
 
         self.panel = panel
@@ -134,34 +148,31 @@ final class CapsuleWindowController {
         self.textLabel = label
         self.refiningLabel = refLabel
         self.contentView = container
-        self.textWidthConstraint = textWidth
-        self.panelWidthConstraint = panelWidth
 
         if isDynamicIsland {
-            animateInDynamicIsland(panel: panel, container: container, targetFrame: targetFrame)
+            animateInDynamicIsland(panel: panel, container: container, targetFrame: target)
         } else {
-            animateInMinimal(panel: panel, targetFrame: targetFrame)
+            animateInMinimal(panel: panel, targetFrame: target)
         }
     }
 
     // MARK: - 灵动岛入场
-    // 原理：窗口从中央小胶囊扩张到全尺寸（NSWindow frame 动画，无 transform）
-    // 圆角由 glass/effect view 自然保持，模糊加在 container 层（被圆角裁剪）
+    // 从正下方小圆胶囊弹出，同时内容高斯模糊清晰化
+    // 用 NSWindow.setFrame 而非 CATransform，避免 anchorPoint 问题和方形边框
 
     private func animateInDynamicIsland(panel: NSPanel, container: NSView, targetFrame: NSRect) {
-        // 起始帧：与目标等高、水平居中、仅 capsuleHeight 宽（最小胶囊）
-        let startWidth = capsuleHeight   // 正圆形起点
+        // 起始帧：正圆形胶囊，位于目标底部下方 16pt
         let startFrame = NSRect(
-            x: targetFrame.midX - startWidth / 2,
-            y: targetFrame.minY,
-            width: startWidth,
+            x: targetFrame.midX - pillWidth / 2,
+            y: targetFrame.minY - 16,
+            width: pillWidth,
             height: capsuleHeight
         )
 
-        // 初始模糊加在 container（内容层），glass view 的圆角会自然裁剪
+        // 内容模糊（被 glass/effect view 圆角裁剪，不会超出胶囊边界）
         container.wantsLayer = true
         let blur = CIFilter(name: "CIGaussianBlur")!
-        blur.setValue(14.0, forKey: kCIInputRadiusKey)
+        blur.setValue(12.0, forKey: kCIInputRadiusKey)
         container.layer?.filters = [blur]
         container.layer?.masksToBounds = false
 
@@ -169,20 +180,21 @@ final class CapsuleWindowController {
         panel.alphaValue = 0
         panel.orderFrontRegardless()
 
-        // 模糊消除动画（独立 CABasicAnimation）
+        // 模糊消除（比窗口动画稍慢，内容在展开后段才清晰）
         let blurAnim = CABasicAnimation(keyPath: "filters.CIGaussianBlur.inputRadius")
-        blurAnim.fromValue = 14.0
+        blurAnim.fromValue = 12.0
         blurAnim.toValue = 0.0
-        blurAnim.duration = 0.42
+        blurAnim.duration = 0.4
         blurAnim.timingFunction = CAMediaTimingFunction(name: .easeOut)
         blurAnim.fillMode = .forwards
         blurAnim.isRemovedOnCompletion = false
         container.layer?.add(blurAnim, forKey: "blurIn")
 
-        // 窗口帧扩张 + 淡入（spring 曲线）
+        // 窗口从下方弹起 + 横向展开，spring 回弹感
+        // controlPoints: 近似 response=0.45, bounce=0.25 的弹簧曲线
         NSAnimationContext.runAnimationGroup({ ctx in
-            ctx.duration = 0.5
-            ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.34, 1.56, 0.64, 1.0)
+            ctx.duration = 0.45
+            ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.34, 1.4, 0.64, 1.0)
             panel.animator().alphaValue = 1
             panel.animator().setFrame(targetFrame, display: true)
         }, completionHandler: {
@@ -224,17 +236,17 @@ final class CapsuleWindowController {
 
         let textSize = (text as NSString).size(withAttributes: [.font: label.font!])
         let desiredTextWidth = min(max(textSize.width + 18, minTextWidth), maxTextWidth)
-        let totalWidth = desiredTextWidth + waveformWidth + waveformLeadingOffset + horizontalPadding * 2 + waveformTextGap
+        let totalWidth = fullWidth(for: desiredTextWidth)
 
+        let screenFrame = NSScreen.main?.visibleFrame ?? .zero
+        var frame = panel.frame
+        frame.size.width = totalWidth
+        frame.origin.x = screenFrame.midX - totalWidth / 2
+
+        // 直接动画窗口帧，Auto Layout 跟着 contentView 自动更新
         NSAnimationContext.runAnimationGroup({ ctx in
             ctx.duration = 0.2
             ctx.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            ctx.allowsImplicitAnimation = true
-            panelWidthConstraint?.animator().constant = totalWidth
-            let screenFrame = NSScreen.main?.visibleFrame ?? .zero
-            var frame = panel.frame
-            frame.size.width = totalWidth
-            frame.origin.x = screenFrame.midX - totalWidth / 2
             panel.animator().setFrame(frame, display: true)
         })
     }
@@ -256,14 +268,15 @@ final class CapsuleWindowController {
         }
     }
 
-    // MARK: - 灵动岛退场：窗口收缩回圆形 + 模糊 + 淡出
+    // MARK: - 灵动岛退场
+    // 向下缩回小圆胶囊，内容同时模糊消失
 
     private func dismissDynamicIsland(panel: NSPanel, completion: (() -> Void)?) {
-        let endWidth = capsuleHeight
+        // 收缩到正圆形，向下偏移 16pt（与入场对称）
         let endFrame = NSRect(
-            x: panel.frame.midX - endWidth / 2,
-            y: panel.frame.minY,
-            width: endWidth,
+            x: panel.frame.midX - pillWidth / 2,
+            y: panel.frame.minY - 16,
+            width: pillWidth,
             height: capsuleHeight
         )
 
@@ -276,8 +289,8 @@ final class CapsuleWindowController {
 
             let blurAnim = CABasicAnimation(keyPath: "filters.CIGaussianBlur.inputRadius")
             blurAnim.fromValue = 0.0
-            blurAnim.toValue = 14.0
-            blurAnim.duration = 0.26
+            blurAnim.toValue = 12.0
+            blurAnim.duration = 0.24
             blurAnim.timingFunction = CAMediaTimingFunction(name: .easeIn)
             blurAnim.fillMode = .forwards
             blurAnim.isRemovedOnCompletion = false
@@ -285,8 +298,8 @@ final class CapsuleWindowController {
         }
 
         NSAnimationContext.runAnimationGroup({ ctx in
-            ctx.duration = 0.3
-            ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.36, 0.0, 0.66, 0.0) // ease-in spring
+            ctx.duration = 0.28
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
             panel.animator().alphaValue = 0
             panel.animator().setFrame(endFrame, display: true)
         }, completionHandler: { [weak self] in
@@ -299,15 +312,15 @@ final class CapsuleWindowController {
     // MARK: - 简约模式退场
 
     private func dismissMinimal(panel: NSPanel, completion: (() -> Void)?) {
-        var targetFrame = panel.frame
-        targetFrame.origin.y -= 8
+        var endFrame = panel.frame
+        endFrame.origin.y -= 8
 
         NSAnimationContext.runAnimationGroup({ ctx in
             ctx.duration = 0.2
             ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
             ctx.allowsImplicitAnimation = true
             panel.animator().alphaValue = 0
-            panel.animator().setFrame(targetFrame, display: true)
+            panel.animator().setFrame(endFrame, display: true)
             panel.contentView?.layer?.transform = CATransform3DMakeScale(0.92, 0.92, 1.0)
         }, completionHandler: { [weak self] in
             panel.orderOut(nil)
@@ -324,8 +337,6 @@ final class CapsuleWindowController {
         textLabel = nil
         refiningLabel = nil
         contentView = nil
-        textWidthConstraint = nil
-        panelWidthConstraint = nil
         panel = nil
     }
 }
