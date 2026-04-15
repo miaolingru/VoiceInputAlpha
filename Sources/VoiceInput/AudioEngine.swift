@@ -7,68 +7,64 @@ final class AudioEngineController {
     private var bandsHandler: (([Float]) -> Void)?
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
 
-    // FFT 配置
+    // FFT
     private let fftSize = 2048
     private var fftSetup: FFTSetup?
-    private var window: [Float] = []
+    private var hannWindow: [Float] = []
+    private var sampleBuffer: [Float] = []
 
-    // 5 个频段的 bin 范围（基于 44100Hz 采样率，fftSize=2048）
-    // freq_per_bin = sampleRate / fftSize ≈ 21.5 Hz/bin
-    // 频段: 80-300Hz | 300-800Hz | 800-2500Hz | 2500-5000Hz | 5000-10000Hz
-    private let bandRanges: [(Int, Int)] = [
-        (4,  14),   // 86–301 Hz   — 低频/胸腔共鸣
-        (14, 38),   // 301–817 Hz  — 中低/元音基频
-        (38, 116),  // 817–2494 Hz — 中频/语音主体
-        (116, 233), // 2494–5011 Hz — 中高/辅音清晰度
-        (233, 466), // 5011–10022 Hz — 高频/齿音/气息
+    // 频段频率范围（Hz），根据实际采样率动态计算 bin 索引
+    private let bandFreqRanges: [(Float, Float)] = [
+        (80,   300),   // 低频  — 胸腔共鸣/基频
+        (300,  800),   // 中低  — 元音基音
+        (800,  2500),  // 中频  — 语音主体
+        (2500, 5000),  // 中高  — 辅音清晰度
+        (5000, 10000), // 高频  — 齿音/气息
     ]
 
     init() {
-        fftSetup = vDSP_create_fftsetup(vDSP_Length(log2(Float(fftSize))), FFTRadix(kFFTRadix2))
-        // 汉宁窗，降低频谱泄漏
-        window = [Float](repeating: 0, count: fftSize)
-        vDSP_hann_window(&window, vDSP_Length(fftSize), Int32(vDSP_HANN_NORM))
+        let log2n = vDSP_Length(log2(Float(fftSize)))
+        fftSetup = vDSP_create_fftsetup(log2n, FFTRadix(kFFTRadix2))
+        hannWindow = [Float](repeating: 0, count: fftSize)
+        vDSP_hann_window(&hannWindow, vDSP_Length(fftSize), Int32(vDSP_HANN_NORM))
     }
 
     deinit {
-        if let setup = fftSetup { vDSP_destroy_fftsetup(setup) }
+        if let s = fftSetup { vDSP_destroy_fftsetup(s) }
     }
 
     func start(bandsHandler: @escaping ([Float]) -> Void,
                recognitionRequest: SFSpeechAudioBufferRecognitionRequest?) {
         self.bandsHandler = bandsHandler
         self.recognitionRequest = recognitionRequest
+        sampleBuffer = []
 
         let inputNode = engine.inputNode
         let format = inputNode.outputFormat(forBus: 0)
-
-        // 积攒样本做 FFT 用
-        var sampleBuffer: [Float] = []
+        let sampleRate = Float(format.sampleRate)
 
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
             guard let self else { return }
             self.recognitionRequest?.append(buffer)
 
-            // 收集样本
             if let channelData = buffer.floatChannelData {
                 let count = Int(buffer.frameLength)
-                sampleBuffer.append(contentsOf: UnsafeBufferPointer(start: channelData[0], count: count))
+                self.sampleBuffer.append(
+                    contentsOf: UnsafeBufferPointer(start: channelData[0], count: count)
+                )
             }
 
-            // 攒够 fftSize 个样本就做一次 FFT
-            if sampleBuffer.count >= self.fftSize {
-                let chunk = Array(sampleBuffer.prefix(self.fftSize))
-                sampleBuffer.removeFirst(min(512, sampleBuffer.count)) // 50% 重叠
-                let bands = self.computeBands(samples: chunk, sampleRate: Float(format.sampleRate))
+            // 攒够 fftSize 后做 FFT，50% 重叠提高时间分辨率
+            while self.sampleBuffer.count >= self.fftSize {
+                let chunk = Array(self.sampleBuffer.prefix(self.fftSize))
+                self.sampleBuffer.removeFirst(self.fftSize / 2)
+                let bands = self.computeBands(samples: chunk, sampleRate: sampleRate)
                 self.bandsHandler?(bands)
             }
         }
 
-        do {
-            try engine.start()
-        } catch {
-            print("[AudioEngine] 启动失败: \(error)")
-        }
+        do { try engine.start() }
+        catch { print("[AudioEngine] 启动失败: \(error)") }
     }
 
     func stop() {
@@ -76,55 +72,65 @@ final class AudioEngineController {
         engine.stop()
         bandsHandler = nil
         recognitionRequest = nil
+        sampleBuffer = []
     }
 
     // MARK: - FFT
 
     private func computeBands(samples: [Float], sampleRate: Float) -> [Float] {
-        guard let fftSetup, samples.count == fftSize else { return [Float](repeating: 0, count: 5) }
-
-        // 加窗
-        var windowed = [Float](repeating: 0, count: fftSize)
-        vDSP_vmul(samples, 1, window, 1, &windowed, 1, vDSP_Length(fftSize))
-
-        // 拆分复数（用 withUnsafeMutablePointer 确保指针生命周期安全）
-        var realPart = [Float](windowed.prefix(fftSize / 2))
-        var imagPart = [Float](repeating: 0, count: fftSize / 2)
-
-        realPart.withUnsafeMutableBufferPointer { realBuf in
-            imagPart.withUnsafeMutableBufferPointer { imagBuf in
-                var splitComplex = DSPSplitComplex(realp: realBuf.baseAddress!, imagp: imagBuf.baseAddress!)
-
-                windowed.withUnsafeBytes { ptr in
-                    let complexPtr = ptr.baseAddress!.assumingMemoryBound(to: DSPComplex.self)
-                    vDSP_ctoz(complexPtr, 2, &splitComplex, 1, vDSP_Length(fftSize / 2))
-                }
-
-                vDSP_fft_zrip(fftSetup, &splitComplex, 1,
-                               vDSP_Length(log2(Float(fftSize))), FFTDirection(FFT_FORWARD))
-
-                // 计算幅度谱（覆盖 realPart）
-                vDSP_zvmags(&splitComplex, 1, realBuf.baseAddress!, 1, vDSP_Length(fftSize / 2))
-            }
+        guard let fftSetup, samples.count == fftSize else {
+            return [Float](repeating: 0, count: 5)
         }
 
-        // realPart 现在存储幅度谱
-        var magnitudes = realPart
+        let halfSize = fftSize / 2
+        let log2n = vDSP_Length(log2(Float(fftSize)))
 
-        // 归一化
-        var scaledMag = [Float](repeating: 0, count: fftSize / 2)
-        var scale = Float(1.0 / Float(fftSize))
-        vDSP_vsmul(magnitudes, 1, &scale, &scaledMag, 1, vDSP_Length(fftSize / 2))
+        // 加汉宁窗
+        var windowed = [Float](repeating: 0, count: fftSize)
+        vDSP_vmul(samples, 1, hannWindow, 1, &windowed, 1, vDSP_Length(fftSize))
 
-        // 各频段取均值 → 归一化到 0-1
-        var bands = [Float](repeating: 0, count: 5)
-        for (i, (lo, hi)) in bandRanges.enumerated() {
-            let clampedHi = min(hi, scaledMag.count)
-            guard lo < clampedHi else { continue }
-            let slice = scaledMag[lo..<clampedHi]
-            let mean = slice.reduce(0, +) / Float(slice.count)
-            // 语音信号的幅度范围大概在 0~0.01，放大并 clamp
-            bands[i] = min(mean * 300.0, 1.0)
+        // 实数 FFT
+        var real = [Float](repeating: 0, count: halfSize)
+        var imag = [Float](repeating: 0, count: halfSize)
+
+        let bands: [Float] = real.withUnsafeMutableBufferPointer { realBuf in
+            imag.withUnsafeMutableBufferPointer { imagBuf in
+                var split = DSPSplitComplex(realp: realBuf.baseAddress!,
+                                            imagp: imagBuf.baseAddress!)
+
+                // 把 real 信号打包成复数格式
+                windowed.withUnsafeBytes { rawPtr in
+                    rawPtr.withMemoryRebound(to: DSPComplex.self) { complexPtr in
+                        vDSP_ctoz(complexPtr.baseAddress!, 2, &split, 1, vDSP_Length(halfSize))
+                    }
+                }
+
+                vDSP_fft_zrip(fftSetup, &split, 1, log2n, FFTDirection(FFT_FORWARD))
+
+                // 幅度（不是功率），正确归一化：除以 N 再取 sqrt
+                var mags = [Float](repeating: 0, count: halfSize)
+                vDSP_zvabs(&split, 1, &mags, 1, vDSP_Length(halfSize))
+                // vDSP_zvabs 输出是 sqrt(r²+i²)，但 zrip 的输出在 0 号位不含虚部
+                // 归一化：除以 (fftSize/2)
+                var norm = Float(halfSize)
+                vDSP_vsdiv(mags, 1, &norm, &mags, 1, vDSP_Length(halfSize))
+
+                // 按频率范围切分频段，取均值后转 dB，映射到 0-1
+                let freqPerBin = sampleRate / Float(self.fftSize)
+                return self.bandFreqRanges.map { (loFreq, hiFreq) in
+                    let loIdx = max(1, Int(loFreq / freqPerBin))
+                    let hiIdx = min(halfSize - 1, Int(hiFreq / freqPerBin))
+                    guard loIdx < hiIdx else { return Float(0) }
+
+                    let slice = mags[loIdx...hiIdx]
+                    let mean = slice.reduce(0, +) / Float(slice.count)
+
+                    // 对数映射：-70dB → 0，-10dB → 1（语音典型范围）
+                    let dB = 20.0 * log10(max(mean, 1e-7))
+                    let normalized = (dB + 70.0) / 60.0
+                    return max(0, min(1, normalized))
+                }
+            }
         }
 
         return bands
