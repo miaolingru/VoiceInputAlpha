@@ -116,7 +116,8 @@ final class CapsuleWindowController {
         }
 
         NSLayoutConstraint.activate([
-            waveform.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            // cornerRadius=25pt，直线区从距边缘25pt开始；+4pt让竖条落在直线区内
+            waveform.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 4),
             waveform.centerYAnchor.constraint(equalTo: container.centerYAnchor),
             waveform.widthAnchor.constraint(equalToConstant: waveformWidth),
             waveform.heightAnchor.constraint(equalToConstant: 29),
