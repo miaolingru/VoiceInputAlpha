@@ -42,13 +42,6 @@ final class MenuBarController {
 
         menu.addItem(.separator())
 
-        let aboutItem = NSMenuItem(title: loc("menu.about"), action: #selector(openAbout(_:)), keyEquivalent: "")
-        aboutItem.image = icon("info.circle")
-        aboutItem.target = self
-        menu.addItem(aboutItem)
-
-        menu.addItem(.separator())
-
         // 识别语言
         let langItem = NSMenuItem(title: loc("menu.language"), action: nil, keyEquivalent: "")
         langItem.image = icon("globe")
@@ -138,6 +131,11 @@ final class MenuBarController {
         menu.addItem(llmItem)
 
         menu.addItem(.separator())
+
+        let aboutItem = NSMenuItem(title: loc("menu.about"), action: #selector(openAbout(_:)), keyEquivalent: "")
+        aboutItem.image = icon("info.circle")
+        aboutItem.target = self
+        menu.addItem(aboutItem)
 
         let quitItem = NSMenuItem(title: loc("menu.quit"), action: #selector(quit(_:)), keyEquivalent: "q")
         quitItem.image = icon("power")
