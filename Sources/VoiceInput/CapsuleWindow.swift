@@ -8,7 +8,7 @@ final class CapsuleWindowController {
     private var contentView: NSView?
     private var springTimer: Timer?
     private var shimmerLayer: CAGradientLayer?
-    private var backgroundLayer: CALayer?  // glass/effect view layer，用于全胶囊扫光
+    private var shimmerClipLayer: CALayer?  // 裁剪为胶囊形状的容器层
 
     private let capsuleHeight: CGFloat = 50
     private let cornerRadius: CGFloat = 25
@@ -112,7 +112,6 @@ final class CapsuleWindowController {
                 CATransaction.commit()
             }
             glass.wantsLayer = true
-            backgroundLayer = glass.layer
             NSLayoutConstraint.activate([
                 glass.leadingAnchor.constraint(equalTo: panel.contentView!.leadingAnchor),
                 glass.trailingAnchor.constraint(equalTo: panel.contentView!.trailingAnchor),
@@ -134,7 +133,6 @@ final class CapsuleWindowController {
             fx.layer?.masksToBounds = true
             fx.layer?.cornerCurve = .continuous
             panel.contentView?.addSubview(fx)
-            backgroundLayer = fx.layer
             panel.contentView?.addSubview(container)
             NSLayoutConstraint.activate([
                 container.leadingAnchor.constraint(equalTo: panel.contentView!.leadingAnchor, constant: horizontalPadding),
@@ -363,45 +361,57 @@ final class CapsuleWindowController {
     }
 
     // MARK: - 全胶囊扫光（仿 iOS 滑动解锁）
-    // 一道白色光带从左向右扫过整个胶囊背景
-    // backgroundLayer 已有 masksToBounds + cornerRadius，自然裁剪为胶囊形状
+    // 用一个 clipLayer（有 cornerRadius + masksToBounds）套住 shimmer 光带
+    // 无论底层是 NSGlassEffectView 还是 NSVisualEffectView，都能精确裁剪为胶囊轮廓
 
     private func applyShimmerToCapsule() {
-        guard let bg = backgroundLayer else { return }
+        guard let cv = panel?.contentView else { return }
+        cv.wantsLayer = true
+        guard let rootLayer = cv.layer else { return }
 
-        let capsuleW = panel?.frame.width ?? 300
-        let bandW: CGFloat = capsuleW * 0.55   // 光带宽度约胶囊一半
+        let capsuleW = cv.bounds.width
+        let bandW: CGFloat = capsuleW * 0.55
 
+        // clipLayer：与胶囊完全重叠，masksToBounds 裁剪子层为胶囊形状
+        let clip = CALayer()
+        clip.frame = CGRect(x: 0, y: 0, width: capsuleW, height: capsuleHeight)
+        clip.cornerRadius = cornerRadius
+        clip.cornerCurve  = .continuous
+        clip.masksToBounds = true
+
+        // shimmer 光带：中心高光，两端透明
         let sl = CAGradientLayer()
-        // 初始位置在胶囊左侧以外
         sl.frame = CGRect(x: -bandW, y: 0, width: bandW, height: capsuleHeight)
         sl.startPoint = CGPoint(x: 0, y: 0.5)
         sl.endPoint   = CGPoint(x: 1, y: 0.5)
-        // 中心白色高光，两端透明，软边缘
         sl.colors = [
             NSColor.white.withAlphaComponent(0.00).cgColor,
-            NSColor.white.withAlphaComponent(0.28).cgColor,
+            NSColor.white.withAlphaComponent(0.30).cgColor,
             NSColor.white.withAlphaComponent(0.00).cgColor,
         ]
         sl.locations = [0.0, 0.5, 1.0] as [NSNumber]
 
-        // 从左到右扫过，扫完后从左侧重新开始，1.6s 一周期
+        // position.x 动画：光带从左侧外扫入，扫出右侧，1.6s 循环
         let anim = CABasicAnimation(keyPath: "position.x")
-        anim.fromValue = -bandW / 2                  // 光带中心从左侧以外开始
-        anim.toValue   = capsuleW + bandW / 2         // 光带中心扫出右侧
-        anim.duration  = 1.6
+        anim.fromValue   = -bandW / 2
+        anim.toValue     = capsuleW + bandW / 2
+        anim.duration    = 1.6
         anim.repeatCount = .infinity
         anim.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
         sl.add(anim, forKey: "shimmer")
 
-        bg.addSublayer(sl)
-        shimmerLayer = sl
+        clip.addSublayer(sl)
+        rootLayer.addSublayer(clip)
+
+        shimmerLayer     = sl
+        shimmerClipLayer = clip
     }
 
     private func stopShimmer() {
         shimmerLayer?.removeAllAnimations()
-        shimmerLayer?.removeFromSuperlayer()
-        shimmerLayer = nil
+        shimmerClipLayer?.removeFromSuperlayer()
+        shimmerLayer     = nil
+        shimmerClipLayer = nil
     }
 
     // MARK: - Dismiss
@@ -510,7 +520,6 @@ final class CapsuleWindowController {
         textLabel = nil
         refiningLabel = nil
         contentView = nil
-        backgroundLayer = nil
         panel = nil
     }
 }
