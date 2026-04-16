@@ -1,0 +1,76 @@
+/* App */
+"app.title" = "Voice Input";
+"menu.holdFn" = "Hold Fn key to record";
+"menu.about" = "About VoiceInput";
+"menu.language" = "Recognition Language";
+"menu.animation" = "Animation";
+"menu.animation.dynamicIsland" = "Dynamic Island";
+"menu.animation.minimal" = "Minimal";
+"menu.animation.none" = "None";
+"menu.animation.speed" = "Animation Speed";
+"menu.animation.slow" = "Slow";
+"menu.animation.medium" = "Medium";
+"menu.animation.fast" = "Fast";
+"menu.punctuation" = "Auto Punctuation";
+"menu.llm" = "LLM Refinement";
+"menu.llm.enabled" = "Enabled";
+"menu.llm.disabled" = "Disabled";
+"menu.settings" = "Settings...";
+"menu.quit" = "Quit VoiceInput";
+
+/* Settings */
+"settings.title" = "LLM Refinement Settings";
+"settings.provider" = "Provider:";
+"settings.apiUrl" = "API Base URL:";
+"settings.apiKey" = "API Key:";
+"settings.model" = "Model:";
+"settings.delay" = "Result Delay:";
+"settings.delayUnit" = "sec (0 = inject immediately)";
+"settings.manage" = "Manage...";
+"settings.test" = "Test";
+"settings.save" = "Save";
+"settings.cancel" = "Cancel";
+"settings.testing" = "Testing...";
+"settings.connected" = "Connection successful!";
+"settings.connectFailed" = "Connection failed: %@";
+"settings.saved" = "Saved";
+
+/* Provider Editor */
+"provider.title" = "Manage Providers";
+"provider.col.name" = "Name";
+"provider.col.url" = "API URL";
+"provider.col.model" = "Default Model";
+"provider.new" = "New Provider";
+"provider.done" = "Done";
+"provider.label.name" = "Name:";
+"provider.label.url" = "URL:";
+"provider.label.model" = "Model:";
+
+/* Capsule */
+"capsule.refining" = "Refining...";
+
+/* About */
+"about.title" = "About VoiceInput";
+"about.version" = "Version %@ (%@)";
+"about.bilibili" = "Bilibili";
+"about.github" = "GitHub";
+"about.copyright" = "© 2026 Miao Lingru. All rights reserved.";
+
+/* Errors */
+"error.noApiKey" = "API key not set";
+"error.invalidUrl" = "Invalid API URL";
+"error.timeout" = "Request timed out (%.2fs)";
+"error.noNetwork" = "No network connection";
+"error.noData" = "No response data";
+"error.badFormat" = "Unexpected response format";
+"error.jsonParse" = "JSON parse error";
+
+/* Permissions */
+"permission.mic.title" = "Microphone Access Required";
+"permission.mic.message" = "Please grant microphone access in System Settings > Privacy & Security > Microphone.";
+"permission.speech.title" = "Speech Recognition Required";
+"permission.speech.message" = "Please grant speech recognition access in System Settings > Privacy & Security > Speech Recognition.";
+"accessibility.warning.title" = "Accessibility Permission Lost";
+"accessibility.warning.message" = "Please go to System Settings > Privacy & Security > Accessibility, remove and re-add VoiceInput.";
+"accessibility.openSettings" = "Open System Settings";
+"accessibility.ignore" = "Ignore";

@@ -54,8 +54,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if !granted {
                 DispatchQueue.main.async {
                     let alert = NSAlert()
-                    alert.messageText = "需要麦克风权限"
-                    alert.informativeText = "请在系统设置 > 隐私与安全性 > 麦克风中授权本应用。"
+                    alert.messageText = loc("permission.mic.title")
+                    alert.informativeText = loc("permission.mic.message")
                     alert.runModal()
                 }
             }
@@ -64,8 +64,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if status != .authorized {
                 DispatchQueue.main.async {
                     let alert = NSAlert()
-                    alert.messageText = "需要语音识别权限"
-                    alert.informativeText = "请在系统设置 > 隐私与安全性 > 语音识别中授权本应用。"
+                    alert.messageText = loc("permission.speech.title")
+                    alert.informativeText = loc("permission.speech.message")
                     alert.runModal()
                 }
             }

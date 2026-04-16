@@ -1,0 +1,76 @@
+/* App */
+"app.title" = "語音輸入";
+"menu.holdFn" = "按住 Fn 鍵開始錄音";
+"menu.about" = "關於 VoiceInput";
+"menu.language" = "辨識語言";
+"menu.animation" = "動畫效果";
+"menu.animation.dynamicIsland" = "靈動島";
+"menu.animation.minimal" = "簡約模式";
+"menu.animation.none" = "無";
+"menu.animation.speed" = "動畫速度";
+"menu.animation.slow" = "慢";
+"menu.animation.medium" = "中";
+"menu.animation.fast" = "快";
+"menu.punctuation" = "自動補全標點";
+"menu.llm" = "LLM 文字優化";
+"menu.llm.enabled" = "已啟用";
+"menu.llm.disabled" = "已停用";
+"menu.settings" = "設定...";
+"menu.quit" = "退出語音輸入";
+
+/* Settings */
+"settings.title" = "LLM 文字優化設定";
+"settings.provider" = "服務商:";
+"settings.apiUrl" = "API 位址:";
+"settings.apiKey" = "API 金鑰:";
+"settings.model" = "模型:";
+"settings.delay" = "結果顯示延遲:";
+"settings.delayUnit" = "秒（0 為立即注入）";
+"settings.manage" = "管理...";
+"settings.test" = "測試連線";
+"settings.save" = "儲存";
+"settings.cancel" = "取消";
+"settings.testing" = "正在測試...";
+"settings.connected" = "連線成功!";
+"settings.connectFailed" = "連線失敗: %@";
+"settings.saved" = "已儲存";
+
+/* Provider Editor */
+"provider.title" = "管理服務商";
+"provider.col.name" = "名稱";
+"provider.col.url" = "API 位址";
+"provider.col.model" = "預設模型";
+"provider.new" = "新服務商";
+"provider.done" = "完成";
+"provider.label.name" = "名稱:";
+"provider.label.url" = "位址:";
+"provider.label.model" = "模型:";
+
+/* Capsule */
+"capsule.refining" = "優化中...";
+
+/* About */
+"about.title" = "關於 VoiceInput";
+"about.version" = "版本 %@ (%@)";
+"about.bilibili" = "Bilibili 主頁";
+"about.github" = "GitHub 專案";
+"about.copyright" = "© 2026 缪凌儒. 保留所有權利。";
+
+/* Errors */
+"error.noApiKey" = "未設定 API 金鑰";
+"error.invalidUrl" = "API 位址無效";
+"error.timeout" = "請求逾時（%.2fs）";
+"error.noNetwork" = "網路無法使用";
+"error.noData" = "無回應資料";
+"error.badFormat" = "回應格式異常";
+"error.jsonParse" = "JSON 解析失敗";
+
+/* Permissions */
+"permission.mic.title" = "需要麥克風權限";
+"permission.mic.message" = "請在系統設定 > 隱私權與安全性 > 麥克風中授權本應用程式。";
+"permission.speech.title" = "需要語音辨識權限";
+"permission.speech.message" = "請在系統設定 > 隱私權與安全性 > 語音辨識中授權本應用程式。";
+"accessibility.warning.title" = "輔助使用權限已失效";
+"accessibility.warning.message" = "請前往系統設定 > 隱私權與安全性 > 輔助使用，移除並重新新增語音輸入。";
+"accessibility.openSettings" = "開啟系統設定";
+"accessibility.ignore" = "忽略";

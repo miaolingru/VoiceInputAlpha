@@ -1,0 +1,76 @@
+/* App */
+"app.title" = "音声入力";
+"menu.holdFn" = "Fn キーを押したまま録音";
+"menu.about" = "VoiceInput について";
+"menu.language" = "認識言語";
+"menu.animation" = "アニメーション";
+"menu.animation.dynamicIsland" = "ダイナミックアイランド";
+"menu.animation.minimal" = "シンプル";
+"menu.animation.none" = "なし";
+"menu.animation.speed" = "アニメーション速度";
+"menu.animation.slow" = "遅い";
+"menu.animation.medium" = "中";
+"menu.animation.fast" = "速い";
+"menu.punctuation" = "自動句読点補完";
+"menu.llm" = "LLM テキスト最適化";
+"menu.llm.enabled" = "有効";
+"menu.llm.disabled" = "無効";
+"menu.settings" = "設定...";
+"menu.quit" = "VoiceInput を終了";
+
+/* Settings */
+"settings.title" = "LLM テキスト最適化設定";
+"settings.provider" = "プロバイダー:";
+"settings.apiUrl" = "API アドレス:";
+"settings.apiKey" = "API キー:";
+"settings.model" = "モデル:";
+"settings.delay" = "結果表示の遅延:";
+"settings.delayUnit" = "秒（0 は即時入力）";
+"settings.manage" = "管理...";
+"settings.test" = "接続テスト";
+"settings.save" = "保存";
+"settings.cancel" = "キャンセル";
+"settings.testing" = "テスト中...";
+"settings.connected" = "接続成功!";
+"settings.connectFailed" = "接続失敗: %@";
+"settings.saved" = "保存しました";
+
+/* Provider Editor */
+"provider.title" = "プロバイダーを管理";
+"provider.col.name" = "名前";
+"provider.col.url" = "API アドレス";
+"provider.col.model" = "デフォルトモデル";
+"provider.new" = "新しいプロバイダー";
+"provider.done" = "完了";
+"provider.label.name" = "名前:";
+"provider.label.url" = "アドレス:";
+"provider.label.model" = "モデル:";
+
+/* Capsule */
+"capsule.refining" = "最適化中...";
+
+/* About */
+"about.title" = "VoiceInput について";
+"about.version" = "バージョン %@ (%@)";
+"about.bilibili" = "Bilibili";
+"about.github" = "GitHub プロジェクト";
+"about.copyright" = "© 2026 缪凌儒. All rights reserved.";
+
+/* Errors */
+"error.noApiKey" = "API キーが設定されていません";
+"error.invalidUrl" = "API アドレスが無効です";
+"error.timeout" = "リクエストがタイムアウトしました（%.2fs）";
+"error.noNetwork" = "ネットワーク接続がありません";
+"error.noData" = "レスポンスデータがありません";
+"error.badFormat" = "レスポンス形式が異常です";
+"error.jsonParse" = "JSON 解析エラー";
+
+/* Permissions */
+"permission.mic.title" = "マイクへのアクセスが必要です";
+"permission.mic.message" = "システム設定 > プライバシーとセキュリティ > マイクで本アプリを許可してください。";
+"permission.speech.title" = "音声認識へのアクセスが必要です";
+"permission.speech.message" = "システム設定 > プライバシーとセキュリティ > 音声認識で本アプリを許可してください。";
+"accessibility.warning.title" = "アクセシビリティの権限が無効です";
+"accessibility.warning.message" = "システム設定 > プライバシーとセキュリティ > アクセシビリティで、VoiceInput を削除して再追加してください。";
+"accessibility.openSettings" = "システム設定を開く";
+"accessibility.ignore" = "無視";

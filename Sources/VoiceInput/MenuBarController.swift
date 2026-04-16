@@ -24,7 +24,7 @@ final class MenuBarController {
     private func setupStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "语音输入")
+            button.image = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: loc("app.title"))
         }
         rebuildMenu()
     }
@@ -32,18 +32,17 @@ final class MenuBarController {
     private func rebuildMenu() {
         let menu = NSMenu()
 
-        // 标题
-        let titleItem = NSMenuItem(title: "语音输入", action: nil, keyEquivalent: "")
+        let titleItem = NSMenuItem(title: loc("app.title"), action: nil, keyEquivalent: "")
         titleItem.isEnabled = false
         menu.addItem(titleItem)
 
-        let instructionItem = NSMenuItem(title: "按住 Fn 键开始录音", action: nil, keyEquivalent: "")
+        let instructionItem = NSMenuItem(title: loc("menu.holdFn"), action: nil, keyEquivalent: "")
         instructionItem.isEnabled = false
         menu.addItem(instructionItem)
 
         menu.addItem(.separator())
 
-        let aboutItem = NSMenuItem(title: "关于 VoiceInput", action: #selector(openAbout(_:)), keyEquivalent: "")
+        let aboutItem = NSMenuItem(title: loc("menu.about"), action: #selector(openAbout(_:)), keyEquivalent: "")
         aboutItem.image = icon("info.circle")
         aboutItem.target = self
         menu.addItem(aboutItem)
@@ -51,7 +50,7 @@ final class MenuBarController {
         menu.addItem(.separator())
 
         // 识别语言
-        let langItem = NSMenuItem(title: "识别语言", action: nil, keyEquivalent: "")
+        let langItem = NSMenuItem(title: loc("menu.language"), action: nil, keyEquivalent: "")
         langItem.image = icon("globe")
         let langMenu = NSMenu()
         let currentLang = UserDefaults.standard.string(forKey: "selectedLanguage") ?? "zh-CN"
@@ -68,45 +67,38 @@ final class MenuBarController {
         menu.addItem(.separator())
 
         // 动画效果
-        let animItem = NSMenuItem(title: "动画效果", action: nil, keyEquivalent: "")
+        let animItem = NSMenuItem(title: loc("menu.animation"), action: nil, keyEquivalent: "")
         animItem.image = icon("sparkles")
         let animMenu = NSMenu()
         let currentAnim = UserDefaults.standard.string(forKey: "animationStyle") ?? "dynamicIsland"
 
-        let diItem = NSMenuItem(title: "灵动岛", action: #selector(selectAnimation(_:)), keyEquivalent: "")
-        diItem.target = self
-        diItem.representedObject = "dynamicIsland"
-        diItem.state = currentAnim == "dynamicIsland" ? .on : .off
-        animMenu.addItem(diItem)
+        for (title, key) in [(loc("menu.animation.dynamicIsland"), "dynamicIsland"),
+                              (loc("menu.animation.minimal"),       "minimal"),
+                              (loc("menu.animation.none"),          "none")] {
+            let item = NSMenuItem(title: title, action: #selector(selectAnimation(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = key
+            item.state = currentAnim == key ? .on : .off
+            animMenu.addItem(item)
+        }
 
-        let minimalItem = NSMenuItem(title: "简约模式", action: #selector(selectAnimation(_:)), keyEquivalent: "")
-        minimalItem.target = self
-        minimalItem.representedObject = "minimal"
-        minimalItem.state = currentAnim == "minimal" ? .on : .off
-        animMenu.addItem(minimalItem)
-
-        let noneItem = NSMenuItem(title: "无", action: #selector(selectAnimation(_:)), keyEquivalent: "")
-        noneItem.target = self
-        noneItem.representedObject = "none"
-        noneItem.state = currentAnim == "none" ? .on : .off
-        animMenu.addItem(noneItem)
-
-        // 动画速度（仅灵动岛模式有效）
+        // 动画速度
         let currentSpeed = UserDefaults.standard.string(forKey: "animationSpeed") ?? "medium"
-        if currentAnim == "dynamicIsland" {
-            animMenu.addItem(.separator())
-            let speedLabel = NSMenuItem(title: "动画速度", action: nil, keyEquivalent: "")
-            speedLabel.isEnabled = false
-            animMenu.addItem(speedLabel)
+        animMenu.addItem(.separator())
+        let speedLabel = NSMenuItem(title: loc("menu.animation.speed"), action: nil, keyEquivalent: "")
+        speedLabel.isEnabled = false
+        animMenu.addItem(speedLabel)
 
-            for (title, key) in [("慢", "slow"), ("中", "medium"), ("快", "fast")] {
-                let item = NSMenuItem(title: title, action: #selector(selectAnimSpeed(_:)), keyEquivalent: "")
-                item.target = self
-                item.representedObject = key
-                item.state = currentSpeed == key ? .on : .off
-                item.indentationLevel = 1
-                animMenu.addItem(item)
-            }
+        for (title, key) in [(loc("menu.animation.slow"), "slow"),
+                              (loc("menu.animation.medium"), "medium"),
+                              (loc("menu.animation.fast"), "fast")] {
+            let item = NSMenuItem(title: title, action: #selector(selectAnimSpeed(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = key
+            item.state = currentSpeed == key ? .on : .off
+            item.indentationLevel = 1
+            item.isEnabled = currentAnim == "dynamicIsland"
+            animMenu.addItem(item)
         }
 
         animItem.submenu = animMenu
@@ -114,20 +106,20 @@ final class MenuBarController {
 
         // 自动标点
         let punctEnabled = UserDefaults.standard.bool(forKey: "autoPunctuationEnabled")
-        let punctItem = NSMenuItem(title: "自动补全标点", action: #selector(togglePunctuation(_:)), keyEquivalent: "")
+        let punctItem = NSMenuItem(title: loc("menu.punctuation"), action: #selector(togglePunctuation(_:)), keyEquivalent: "")
         punctItem.image = icon("text.badge.plus")
         punctItem.target = self
         punctItem.state = punctEnabled ? .on : .off
         menu.addItem(punctItem)
 
         // LLM 优化
-        let llmItem = NSMenuItem(title: "LLM 文本优化", action: nil, keyEquivalent: "")
+        let llmItem = NSMenuItem(title: loc("menu.llm"), action: nil, keyEquivalent: "")
         llmItem.image = icon("wand.and.stars")
         let llmMenu = NSMenu()
         let llmEnabled = UserDefaults.standard.bool(forKey: "llmEnabled")
 
         let toggleItem = NSMenuItem(
-            title: llmEnabled ? "已启用" : "已禁用",
+            title: llmEnabled ? loc("menu.llm.enabled") : loc("menu.llm.disabled"),
             action: #selector(toggleLLM(_:)),
             keyEquivalent: ""
         )
@@ -137,7 +129,7 @@ final class MenuBarController {
 
         llmMenu.addItem(.separator())
 
-        let settingsItem = NSMenuItem(title: "设置...", action: #selector(openSettings(_:)), keyEquivalent: "")
+        let settingsItem = NSMenuItem(title: loc("menu.settings"), action: #selector(openSettings(_:)), keyEquivalent: "")
         settingsItem.image = icon("gear")
         settingsItem.target = self
         llmMenu.addItem(settingsItem)
@@ -147,7 +139,7 @@ final class MenuBarController {
 
         menu.addItem(.separator())
 
-        let quitItem = NSMenuItem(title: "退出语音输入", action: #selector(quit(_:)), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: loc("menu.quit"), action: #selector(quit(_:)), keyEquivalent: "q")
         quitItem.image = icon("power")
         quitItem.target = self
         menu.addItem(quitItem)
@@ -155,13 +147,9 @@ final class MenuBarController {
         statusItem.menu = menu
     }
 
-    // MARK: - Helpers
-
     private func icon(_ name: String) -> NSImage? {
         NSImage(systemSymbolName: name, accessibilityDescription: nil)
     }
-
-    // MARK: - Actions
 
     @objc private func selectLanguage(_ sender: NSMenuItem) {
         guard let code = sender.representedObject as? String else { return }
@@ -211,15 +199,15 @@ final class MenuBarController {
     }
 
     func showAccessibilityWarning() {
-        statusItem.button?.image = NSImage(systemSymbolName: "mic.slash.fill", accessibilityDescription: "辅助功能权限丢失")
+        statusItem.button?.image = NSImage(systemSymbolName: "mic.slash.fill", accessibilityDescription: loc("accessibility.warning.title"))
         let alert = NSAlert()
-        alert.messageText = "辅助功能权限已失效"
-        alert.informativeText = "请前往系统设置 > 隐私与安全性 > 辅助功能，移除并重新添加语音输入。"
-        alert.addButton(withTitle: "打开系统设置")
-        alert.addButton(withTitle: "忽略")
+        alert.messageText = loc("accessibility.warning.title")
+        alert.informativeText = loc("accessibility.warning.message")
+        alert.addButton(withTitle: loc("accessibility.openSettings"))
+        alert.addButton(withTitle: loc("accessibility.ignore"))
         if alert.runModal() == .alertFirstButtonReturn {
             NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
         }
-        statusItem.button?.image = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "语音输入")
+        statusItem.button?.image = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: loc("app.title"))
     }
 }

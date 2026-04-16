@@ -15,14 +15,13 @@ final class AboutWindowController: NSObject {
 
     private func buildWindow() {
         let w = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 320, height: 340),
+            contentRect: NSRect(x: 0, y: 0, width: 320, height: 320),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
         )
-        w.title = "关于 VoiceInput"
+        w.title = loc("about.title")
         w.isReleasedWhenClosed = false
-        w.titlebarAppearsTransparent = false
 
         guard let cv = w.contentView else { return }
 
@@ -42,9 +41,7 @@ final class AboutWindowController: NSObject {
 
         // ── App 图标 ───────────────────────────────────────────
         let iconView = NSImageView()
-        if let icon = NSImage(named: "AppIcon") ?? NSApp.applicationIconImage {
-            iconView.image = icon
-        }
+        iconView.image = NSApp.applicationIconImage
         iconView.imageScaling = .scaleProportionallyDown
         iconView.translatesAutoresizingMaskIntoConstraints = false
         iconView.widthAnchor.constraint(equalToConstant: 80).isActive = true
@@ -62,7 +59,7 @@ final class AboutWindowController: NSObject {
         // ── 版本号 ────────────────────────────────────────────
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.9"
         let build   = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
-        let versionLabel = NSTextField(labelWithString: "版本 \(version) (\(build))")
+        let versionLabel = NSTextField(labelWithString: loc("about.version", version, build))
         versionLabel.font = .systemFont(ofSize: 12)
         versionLabel.textColor = .secondaryLabelColor
         vStack.addArrangedSubview(versionLabel)
@@ -74,18 +71,12 @@ final class AboutWindowController: NSObject {
         sep1.widthAnchor.constraint(equalTo: vStack.widthAnchor, constant: -40).isActive = true
         vStack.setCustomSpacing(16, after: sep1)
 
-        // ── 作者 ──────────────────────────────────────────────
-        let authorLabel = NSTextField(labelWithString: "作者")
-        authorLabel.font = .systemFont(ofSize: 11)
-        authorLabel.textColor = .tertiaryLabelColor
+        // ── 作者名 ────────────────────────────────────────────
+        let authorLabel = NSTextField(labelWithString: "缪凌儒BlackSquare")
+        authorLabel.font = .systemFont(ofSize: 13, weight: .medium)
+        authorLabel.textColor = .labelColor
         vStack.addArrangedSubview(authorLabel)
-        vStack.setCustomSpacing(4, after: authorLabel)
-
-        let authorName = NSTextField(labelWithString: "缪凌儒  BlackSquare")
-        authorName.font = .systemFont(ofSize: 13, weight: .medium)
-        authorName.textColor = .labelColor
-        vStack.addArrangedSubview(authorName)
-        vStack.setCustomSpacing(16, after: authorName)
+        vStack.setCustomSpacing(14, after: authorLabel)
 
         // ── 链接区 ────────────────────────────────────────────
         let linksStack = NSStackView()
@@ -93,22 +84,20 @@ final class AboutWindowController: NSObject {
         linksStack.alignment = .leading
         linksStack.spacing = 8
 
-        linksStack.addArrangedSubview(
-            makeLinkRow(
-                symbolName: "play.circle.fill",
-                symbolColor: .systemPink,
-                title: "Bilibili 主页",
-                url: "https://space.bilibili.com/404899"
-            )
-        )
-        linksStack.addArrangedSubview(
-            makeLinkRow(
-                symbolName: "chevron.left.forwardslash.chevron.right",
-                symbolColor: .labelColor,
-                title: "GitHub 项目",
-                url: "https://github.com/BlackSquarre/VoiceInputAlpha"
-            )
-        )
+        linksStack.addArrangedSubview(makeLinkRow(
+            svgName: "bilibili",
+            fallbackSymbol: "play.circle.fill",
+            fallbackColor: .systemPink,
+            title: loc("about.bilibili"),
+            url: "https://space.bilibili.com/404899"
+        ))
+        linksStack.addArrangedSubview(makeLinkRow(
+            svgName: "github",
+            fallbackSymbol: "chevron.left.forwardslash.chevron.right",
+            fallbackColor: .labelColor,
+            title: loc("about.github"),
+            url: "https://github.com/BlackSquarre/VoiceInputAlpha"
+        ))
 
         vStack.addArrangedSubview(linksStack)
         vStack.setCustomSpacing(20, after: linksStack)
@@ -120,7 +109,7 @@ final class AboutWindowController: NSObject {
         vStack.setCustomSpacing(12, after: sep2)
 
         // ── 版权 ──────────────────────────────────────────────
-        let copyright = NSTextField(labelWithString: "© 2026 缪凌儒. 保留所有权利。")
+        let copyright = NSTextField(labelWithString: loc("about.copyright"))
         copyright.font = .systemFont(ofSize: 11)
         copyright.textColor = .tertiaryLabelColor
         vStack.addArrangedSubview(copyright)
@@ -141,40 +130,47 @@ final class AboutWindowController: NSObject {
         return box
     }
 
-    /// 图标 + 可点击链接文字的水平行
-    private func makeLinkRow(symbolName: String, symbolColor: NSColor, title: String, url: String) -> NSView {
+    private func makeLinkRow(svgName: String, fallbackSymbol: String,
+                              fallbackColor: NSColor, title: String, url: String) -> NSView {
         let row = NSStackView()
         row.orientation = .horizontal
         row.spacing = 8
         row.alignment = .centerY
 
-        // SF Symbol 图标
+        // 官方 SVG 图标，加载失败降级为 SF Symbol
         let icon = NSImageView()
-        let config = NSImage.SymbolConfiguration(pointSize: 15, weight: .regular)
-        icon.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil)?
-            .withSymbolConfiguration(config)
-        icon.contentTintColor = symbolColor
         icon.translatesAutoresizingMaskIntoConstraints = false
-        icon.widthAnchor.constraint(equalToConstant: 20).isActive = true
+        icon.widthAnchor.constraint(equalToConstant: 18).isActive = true
+        icon.heightAnchor.constraint(equalToConstant: 18).isActive = true
 
-        // 链接按钮
+        if let svgURL = Bundle.main.url(forResource: svgName, withExtension: "svg",
+                                         subdirectory: "Icons"),
+           let svgImage = NSImage(contentsOf: svgURL) {
+            svgImage.size = NSSize(width: 18, height: 18)
+            icon.image = svgImage
+            // 适配深浅色：通过 template 模式让系统着色
+            icon.image?.isTemplate = true
+            icon.contentTintColor = fallbackColor
+        } else {
+            // 降级到 SF Symbol
+            let cfg = NSImage.SymbolConfiguration(pointSize: 14, weight: .regular)
+            icon.image = NSImage(systemSymbolName: fallbackSymbol,
+                                  accessibilityDescription: nil)?
+                .withSymbolConfiguration(cfg)
+            icon.contentTintColor = fallbackColor
+        }
+
+        // 链接按钮（下划线 + linkColor）
         let btn = NSButton(title: title, target: self, action: #selector(openLink(_:)))
-        btn.bezelStyle = .inline
         btn.isBordered = false
-        btn.contentTintColor = .linkColor
-        btn.font = .systemFont(ofSize: 13)
-        btn.toolTip = url
-        // 存 URL 到 identifier
         btn.identifier = NSUserInterfaceItemIdentifier(url)
-        // 鼠标悬停时显示手型光标
-        btn.addCursorRect(btn.bounds, cursor: .pointingHand)
-        // 下划线
         let attrs: [NSAttributedString.Key: Any] = [
             .foregroundColor: NSColor.linkColor,
             .underlineStyle: NSUnderlineStyle.single.rawValue,
             .font: NSFont.systemFont(ofSize: 13),
         ]
         btn.attributedTitle = NSAttributedString(string: title, attributes: attrs)
+        btn.toolTip = url
 
         row.addArrangedSubview(icon)
         row.addArrangedSubview(btn)

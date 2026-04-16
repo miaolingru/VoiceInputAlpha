@@ -84,7 +84,7 @@ final class CapsuleWindowController {
         label.cell?.truncatesLastVisibleLine = true
         container.addSubview(label)
 
-        let refLabel = NSTextField(labelWithString: "优化中...")
+        let refLabel = NSTextField(labelWithString: loc("capsule.refining"))
         refLabel.translatesAutoresizingMaskIntoConstraints = false
         refLabel.font = .systemFont(ofSize: 12, weight: .regular)
         refLabel.textColor = .secondaryLabelColor

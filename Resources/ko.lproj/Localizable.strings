@@ -1,0 +1,76 @@
+/* App */
+"app.title" = "음성 입력";
+"menu.holdFn" = "Fn 키를 누르고 있으면 녹음";
+"menu.about" = "VoiceInput 정보";
+"menu.language" = "인식 언어";
+"menu.animation" = "애니메이션";
+"menu.animation.dynamicIsland" = "다이나믹 아일랜드";
+"menu.animation.minimal" = "미니멀";
+"menu.animation.none" = "없음";
+"menu.animation.speed" = "애니메이션 속도";
+"menu.animation.slow" = "느림";
+"menu.animation.medium" = "중간";
+"menu.animation.fast" = "빠름";
+"menu.punctuation" = "자동 구두점";
+"menu.llm" = "LLM 텍스트 최적화";
+"menu.llm.enabled" = "활성화됨";
+"menu.llm.disabled" = "비활성화됨";
+"menu.settings" = "설정...";
+"menu.quit" = "VoiceInput 종료";
+
+/* Settings */
+"settings.title" = "LLM 텍스트 최적화 설정";
+"settings.provider" = "공급자:";
+"settings.apiUrl" = "API 주소:";
+"settings.apiKey" = "API 키:";
+"settings.model" = "모델:";
+"settings.delay" = "결과 표시 지연:";
+"settings.delayUnit" = "초 (0 = 즉시 입력)";
+"settings.manage" = "관리...";
+"settings.test" = "연결 테스트";
+"settings.save" = "저장";
+"settings.cancel" = "취소";
+"settings.testing" = "테스트 중...";
+"settings.connected" = "연결 성공!";
+"settings.connectFailed" = "연결 실패: %@";
+"settings.saved" = "저장됨";
+
+/* Provider Editor */
+"provider.title" = "공급자 관리";
+"provider.col.name" = "이름";
+"provider.col.url" = "API 주소";
+"provider.col.model" = "기본 모델";
+"provider.new" = "새 공급자";
+"provider.done" = "완료";
+"provider.label.name" = "이름:";
+"provider.label.url" = "주소:";
+"provider.label.model" = "모델:";
+
+/* Capsule */
+"capsule.refining" = "최적화 중...";
+
+/* About */
+"about.title" = "VoiceInput 정보";
+"about.version" = "버전 %@ (%@)";
+"about.bilibili" = "Bilibili";
+"about.github" = "GitHub 프로젝트";
+"about.copyright" = "© 2026 缪凌儒. All rights reserved.";
+
+/* Errors */
+"error.noApiKey" = "API 키가 설정되지 않았습니다";
+"error.invalidUrl" = "API 주소가 유효하지 않습니다";
+"error.timeout" = "요청 시간 초과 (%.2fs)";
+"error.noNetwork" = "네트워크에 연결할 수 없습니다";
+"error.noData" = "응답 데이터 없음";
+"error.badFormat" = "응답 형식이 올바르지 않습니다";
+"error.jsonParse" = "JSON 파싱 오류";
+
+/* Permissions */
+"permission.mic.title" = "마이크 접근 권한이 필요합니다";
+"permission.mic.message" = "시스템 설정 > 개인 정보 보호 및 보안 > 마이크에서 이 앱을 허용해 주세요.";
+"permission.speech.title" = "음성 인식 권한이 필요합니다";
+"permission.speech.message" = "시스템 설정 > 개인 정보 보호 및 보안 > 음성 인식에서 이 앱을 허용해 주세요.";
+"accessibility.warning.title" = "손쉬운 사용 권한이 무효화되었습니다";
+"accessibility.warning.message" = "시스템 설정 > 개인 정보 보호 및 보안 > 손쉬운 사용에서 VoiceInput을 제거하고 다시 추가해 주세요.";
+"accessibility.openSettings" = "시스템 설정 열기";
+"accessibility.ignore" = "무시";

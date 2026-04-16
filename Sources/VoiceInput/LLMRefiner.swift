@@ -15,13 +15,13 @@ final class LLMRefiner {
         let model = UserDefaults.standard.string(forKey: "llmModel") ?? "gpt-4o-mini"
 
         guard !apiKey.isEmpty else {
-            completion(nil, "未设置 API 密钥")
+            completion(nil, loc("error.noApiKey"))
             return
         }
 
         let urlString = baseURL.hasSuffix("/") ? "\(baseURL)chat/completions" : "\(baseURL)/chat/completions"
         guard let url = URL(string: urlString) else {
-            completion(nil, "API 地址无效")
+            completion(nil, loc("error.invalidUrl"))
             return
         }
 
@@ -51,9 +51,9 @@ final class LLMRefiner {
                 let nsErr = error as NSError
                 let msg: String
                 if nsErr.code == NSURLErrorTimedOut {
-                    msg = "请求超时（\(elapsed)s）"
+                    msg = loc("error.timeout", Double(elapsed) ?? 0)
                 } else if nsErr.code == NSURLErrorNotConnectedToInternet || nsErr.code == NSURLErrorNetworkConnectionLost {
-                    msg = "网络不可用"
+                    msg = loc("error.noNetwork")
                 } else {
                     msg = error.localizedDescription
                 }
@@ -63,7 +63,7 @@ final class LLMRefiner {
             }
 
             guard let data = data else {
-                completion(nil, "无响应数据")
+                completion(nil, loc("error.noData"))
                 return
             }
 
@@ -91,11 +91,11 @@ final class LLMRefiner {
                     completion(content.trimmingCharacters(in: .whitespacesAndNewlines), nil)
                 } else {
                     print("[LLMRefiner] 响应格式异常(\(elapsed)s)")
-                    completion(nil, "响应格式异常")
+                    completion(nil, loc("error.badFormat"))
                 }
             } catch {
                 print("[LLMRefiner] JSON 解析错误(\(elapsed)s): \(error)")
-                completion(nil, "JSON 解析失败")
+                completion(nil, loc("error.jsonParse"))
             }
         }.resume()
     }

@@ -282,7 +282,7 @@ final class SettingsWindowController: NSObject {
             backing: .buffered,
             defer: false
         )
-        w.title = "LLM 文本优化设置"
+        w.title = loc("settings.title")
         w.isReleasedWhenClosed = false
 
         // ── 直接使用系统 contentView，不替换它 ──────────────

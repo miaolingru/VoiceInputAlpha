@@ -69,5 +69,6 @@ define bundle_app
 	cp Sources/$(APP_NAME)/Info.plist "$(2)/Contents/Info.plist"
 	cp Sources/$(APP_NAME)/AppIcon.icns "$(2)/Contents/Resources/AppIcon.icns"
 	cp -R Resources/*.lproj "$(2)/Contents/Resources/"
+	cp -R Resources/Icons "$(2)/Contents/Resources/"
 	codesign --force --sign - --entitlements VoiceInput.entitlements "$(2)"
 endef
