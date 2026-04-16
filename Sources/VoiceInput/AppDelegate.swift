@@ -122,21 +122,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
             if llmEnabled && !apiKey.isEmpty {
                 capsuleWindow.showRefining()
-                llmRefiner.refine(text: processedText) { [weak self] refined in
+                llmRefiner.refine(text: processedText) { [weak self] refined, errorMsg in
                     DispatchQueue.main.async {
-                        // LLM 失败：胶囊显示错误提示 3 秒，文字仍正常上屏
-                        guard let refined else {
-                            self?.capsuleWindow.showError("LLM 连接失败") {
-                                self?.textInjector.inject(text: processedText)
-                            }
+                        guard let self else { return }
+                        if let errorMsg {
+                            // 立即注入文字，同时胶囊显示错误 3 秒
+                            self.textInjector.inject(text: processedText)
+                            self.capsuleWindow.showError(errorMsg)
                             return
                         }
-                        let finalText = refined
-                        self?.capsuleWindow.updateText(finalText)
+                        let finalText = refined ?? processedText
+                        self.capsuleWindow.updateText(finalText)
                         let delay = UserDefaults.standard.double(forKey: "llmResultDelay")
                         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                            self?.capsuleWindow.dismiss {
-                                self?.textInjector.inject(text: finalText)
+                            self.capsuleWindow.dismiss {
+                                self.textInjector.inject(text: finalText)
                             }
                         }
                     }

@@ -342,17 +342,16 @@ final class CapsuleWindowController {
         }
     }
 
-    /// LLM 失败时显示错误提示，3 秒后自动消失
-    func showError(_ message: String, then completion: @escaping () -> Void) {
+    /// LLM 失败时显示错误提示，3 秒后自动消失（文字注入由调用方先行处理）
+    func showError(_ message: String) {
         stopShimmer()
         refiningLabel?.isHidden = true
         textLabel?.isHidden = false
         textLabel?.textColor = .systemRed
-        textLabel?.stringValue = message
-        updateText(message)
+        updateText("⚠️ \(message)")
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
-            self?.dismiss { completion() }
+            self?.dismiss()
         }
     }
 

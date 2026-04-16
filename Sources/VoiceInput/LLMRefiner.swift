@@ -8,19 +8,20 @@ final class LLMRefiner {
     3. DO NOT rewrite, add, remove, or explain anything. Return ONLY the corrected text.
     """
 
-    func refine(text: String, completion: @escaping (String?) -> Void) {
+    /// completion: (refinedText, errorMessage) — 成功时 errorMessage 为 nil，失败时 refinedText 为 nil
+    func refine(text: String, completion: @escaping (String?, String?) -> Void) {
         let baseURL = UserDefaults.standard.string(forKey: "llmAPIBaseURL") ?? "https://api.openai.com/v1"
         let apiKey = UserDefaults.standard.string(forKey: "llmAPIKey") ?? ""
         let model = UserDefaults.standard.string(forKey: "llmModel") ?? "gpt-4o-mini"
 
         guard !apiKey.isEmpty else {
-            completion(nil)
+            completion(nil, "未设置 API 密钥")
             return
         }
 
         let urlString = baseURL.hasSuffix("/") ? "\(baseURL)chat/completions" : "\(baseURL)/chat/completions"
         guard let url = URL(string: urlString) else {
-            completion(nil)
+            completion(nil, "API 地址无效")
             return
         }
 
@@ -45,9 +46,38 @@ final class LLMRefiner {
         let startTime = Date()
         URLSession.shared.dataTask(with: request) { data, response, error in
             let elapsed = String(format: "%.2f", Date().timeIntervalSince(startTime))
-            guard let data = data, error == nil else {
-                print("[LLMRefiner] 请求失败(\(elapsed)s): \(error?.localizedDescription ?? "unknown")")
-                completion(nil)
+
+            if let error = error {
+                let nsErr = error as NSError
+                let msg: String
+                if nsErr.code == NSURLErrorTimedOut {
+                    msg = "请求超时（\(elapsed)s）"
+                } else if nsErr.code == NSURLErrorNotConnectedToInternet || nsErr.code == NSURLErrorNetworkConnectionLost {
+                    msg = "网络不可用"
+                } else {
+                    msg = error.localizedDescription
+                }
+                print("[LLMRefiner] 请求失败(\(elapsed)s): \(error.localizedDescription)")
+                completion(nil, msg)
+                return
+            }
+
+            guard let data = data else {
+                completion(nil, "无响应数据")
+                return
+            }
+
+            // HTTP 状态码错误
+            if let httpResp = response as? HTTPURLResponse, httpResp.statusCode != 200 {
+                let body = String(data: data, encoding: .utf8) ?? ""
+                // 尝试从 JSON 提取 error.message
+                let detail = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])
+                    .flatMap { $0["error"] as? [String: Any] }
+                    .flatMap { $0["message"] as? String }
+                    ?? String(body.prefix(80))
+                let msg = "HTTP \(httpResp.statusCode): \(detail)"
+                print("[LLMRefiner] 错误(\(elapsed)s): \(msg)")
+                completion(nil, msg)
                 return
             }
 
@@ -58,14 +88,14 @@ final class LLMRefiner {
                    let message = first["message"] as? [String: Any],
                    let content = message["content"] as? String {
                     print("[LLMRefiner] 完成(\(elapsed)s)")
-                    completion(content.trimmingCharacters(in: .whitespacesAndNewlines))
+                    completion(content.trimmingCharacters(in: .whitespacesAndNewlines), nil)
                 } else {
                     print("[LLMRefiner] 响应格式异常(\(elapsed)s)")
-                    completion(nil)
+                    completion(nil, "响应格式异常")
                 }
             } catch {
                 print("[LLMRefiner] JSON 解析错误(\(elapsed)s): \(error)")
-                completion(nil)
+                completion(nil, "JSON 解析失败")
             }
         }.resume()
     }
