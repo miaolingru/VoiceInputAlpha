@@ -225,7 +225,7 @@ final class ProviderEditorController: NSObject, NSTableViewDataSource, NSTableVi
 
 // MARK: - 设置窗口
 
-final class SettingsWindowController {
+final class SettingsWindowController: NSObject {
     private var window: NSWindow?
     private var providerPopup: NSPopUpButton!
     private var apiBaseURLField: NSTextField!
@@ -245,7 +245,8 @@ final class SettingsWindowController {
         if let window = window {
             refreshFields()
             window.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
+            if #available(macOS 14.0, *) { NSApp.activate() }
+            else { NSApp.activate(ignoringOtherApps: true) }
             return
         }
 
@@ -339,8 +340,13 @@ final class SettingsWindowController {
 
         self.window = window
         refreshFields()
+        window.recalculateKeyViewLoop()
         window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        if #available(macOS 14.0, *) {
+            NSApp.activate()
+        } else {
+            NSApp.activate(ignoringOtherApps: true)
+        }
     }
 
     // MARK: - Helpers
