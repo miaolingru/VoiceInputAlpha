@@ -8,6 +8,7 @@ final class CapsuleWindowController {
     private var contentView: NSView?
     private var springTimer: Timer?
     private var shimmerLayer: CAGradientLayer?
+    private var backgroundLayer: CALayer?  // glass/effect view layer，用于全胶囊扫光
 
     private let capsuleHeight: CGFloat = 50
     private let cornerRadius: CGFloat = 25
@@ -110,6 +111,8 @@ final class CapsuleWindowController {
             if animationStyle == "none" {
                 CATransaction.commit()
             }
+            glass.wantsLayer = true
+            backgroundLayer = glass.layer
             NSLayoutConstraint.activate([
                 glass.leadingAnchor.constraint(equalTo: panel.contentView!.leadingAnchor),
                 glass.trailingAnchor.constraint(equalTo: panel.contentView!.trailingAnchor),
@@ -131,6 +134,7 @@ final class CapsuleWindowController {
             fx.layer?.masksToBounds = true
             fx.layer?.cornerCurve = .continuous
             panel.contentView?.addSubview(fx)
+            backgroundLayer = fx.layer
             panel.contentView?.addSubview(container)
             NSLayoutConstraint.activate([
                 container.leadingAnchor.constraint(equalTo: panel.contentView!.leadingAnchor, constant: horizontalPadding),
@@ -338,60 +342,66 @@ final class CapsuleWindowController {
         }
     }
 
+    /// LLM 失败时显示错误提示，3 秒后自动消失
+    func showError(_ message: String, then completion: @escaping () -> Void) {
+        stopShimmer()
+        refiningLabel?.isHidden = true
+        textLabel?.isHidden = false
+        textLabel?.textColor = .systemRed
+        textLabel?.stringValue = message
+        updateText(message)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
+            self?.dismiss { completion() }
+        }
+    }
+
     func showRefining() {
         textLabel?.isHidden = true
         refiningLabel?.isHidden = false
         waveformView?.stopAnimating()
-        if let label = refiningLabel {
-            applyShimmer(to: label)
-        }
+        applyShimmerToCapsule()
     }
 
-    // MARK: - 扫光动画（仿 iOS 滑动解锁）
+    // MARK: - 全胶囊扫光（仿 iOS 滑动解锁）
+    // 一道白色光带从左向右扫过整个胶囊背景
+    // backgroundLayer 已有 masksToBounds + cornerRadius，自然裁剪为胶囊形状
 
-    private func applyShimmer(to label: NSTextField) {
-        label.wantsLayer = true
-        label.textColor = .labelColor
-        label.superview?.layoutSubtreeIfNeeded()
+    private func applyShimmerToCapsule() {
+        guard let bg = backgroundLayer else { return }
 
-        // 根据文字内容测量宽高
-        let font = label.font ?? NSFont.systemFont(ofSize: 12)
-        let measured = (label.stringValue as NSString).size(withAttributes: [.font: font])
-        let w = max(measured.width + 6, 60)
-        let h = max(measured.height + 2, label.frame.height > 0 ? label.frame.height : 18)
+        let capsuleW = panel?.frame.width ?? 300
+        let bandW: CGFloat = capsuleW * 0.55   // 光带宽度约胶囊一半
 
-        // 扫光 gradient 作为 layer mask
-        // 白色 = 完全可见，灰色 = 半透明，形成亮斑扫过效果
         let sl = CAGradientLayer()
-        sl.frame = CGRect(x: 0, y: 0, width: w, height: h)
+        // 初始位置在胶囊左侧以外
+        sl.frame = CGRect(x: -bandW, y: 0, width: bandW, height: capsuleHeight)
         sl.startPoint = CGPoint(x: 0, y: 0.5)
         sl.endPoint   = CGPoint(x: 1, y: 0.5)
+        // 中心白色高光，两端透明，软边缘
         sl.colors = [
-            NSColor(white: 0.45, alpha: 1).cgColor,
-            NSColor(white: 0.45, alpha: 1).cgColor,
-            NSColor(white: 1.00, alpha: 1).cgColor,
-            NSColor(white: 0.45, alpha: 1).cgColor,
-            NSColor(white: 0.45, alpha: 1).cgColor,
+            NSColor.white.withAlphaComponent(0.00).cgColor,
+            NSColor.white.withAlphaComponent(0.28).cgColor,
+            NSColor.white.withAlphaComponent(0.00).cgColor,
         ]
-        // 初始位置：亮斑在最左侧以外
-        sl.locations = [-0.6, -0.3, 0.0, 0.3, 0.6] as [NSNumber]
+        sl.locations = [0.0, 0.5, 1.0] as [NSNumber]
 
-        // 从左到右扫过，周期 1.6s
-        let anim = CABasicAnimation(keyPath: "locations")
-        anim.fromValue = [-0.6, -0.3, 0.0, 0.3, 0.6] as [NSNumber]
-        anim.toValue   = [ 0.4,  0.7, 1.0, 1.3, 1.6] as [NSNumber]
+        // 从左到右扫过，扫完后从左侧重新开始，1.6s 一周期
+        let anim = CABasicAnimation(keyPath: "position.x")
+        anim.fromValue = -bandW / 2                  // 光带中心从左侧以外开始
+        anim.toValue   = capsuleW + bandW / 2         // 光带中心扫出右侧
         anim.duration  = 1.6
         anim.repeatCount = .infinity
         anim.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
         sl.add(anim, forKey: "shimmer")
 
-        label.layer?.mask = sl
+        bg.addSublayer(sl)
         shimmerLayer = sl
     }
 
     private func stopShimmer() {
         shimmerLayer?.removeAllAnimations()
-        refiningLabel?.layer?.mask = nil
+        shimmerLayer?.removeFromSuperlayer()
         shimmerLayer = nil
     }
 
@@ -501,6 +511,7 @@ final class CapsuleWindowController {
         textLabel = nil
         refiningLabel = nil
         contentView = nil
+        backgroundLayer = nil
         panel = nil
     }
 }

@@ -124,7 +124,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 capsuleWindow.showRefining()
                 llmRefiner.refine(text: processedText) { [weak self] refined in
                     DispatchQueue.main.async {
-                        let finalText = refined ?? processedText
+                        // LLM 失败：胶囊显示错误提示 3 秒，文字仍正常上屏
+                        guard let refined else {
+                            self?.capsuleWindow.showError("LLM 连接失败") {
+                                self?.textInjector.inject(text: processedText)
+                            }
+                            return
+                        }
+                        let finalText = refined
                         self?.capsuleWindow.updateText(finalText)
                         let delay = UserDefaults.standard.double(forKey: "llmResultDelay")
                         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
