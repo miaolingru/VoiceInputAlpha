@@ -18,11 +18,13 @@
 "menu.llm" = "LLM 文字優化";
 "menu.llm.enabled" = "已啟用";
 "menu.llm.disabled" = "已停用";
+"menu.llm.howto" = "如何使用 LLM 優化";
 "menu.settings" = "設定...";
 "menu.quit" = "退出";
 
 /* Settings */
 "settings.title" = "LLM 文字優化設定";
+"settings.llm.desc" = "使用 LLM 自動修正語音辨識錯誤並優化標點。填寫 API 金鑰後即可啟用。";
 "settings.provider" = "服務商:";
 "settings.apiUrl" = "API 位址:";
 "settings.apiKey" = "API 金鑰:";
@@ -59,6 +61,9 @@
 "about.bilibili" = "Bilibili 主頁";
 "about.github" = "GitHub 專案";
 "about.copyright" = "© 2026 缪凌儒. 保留所有權利。";
+
+/* LLM How-to */
+"llm.howto.message" = "1. 選擇服務商（OpenAI、Anthropic、DeepSeek 或自訂）。\n2. 填寫 API 金鑰。\n3. 選擇模型並儲存。\n4. 在選單中啟用「LLM 文字優化」。\n\n每次錄音結束後，辨識文字將送至 LLM 進行修正，支援串流輸出即時預覽。錄音期間按空白鍵或退格鍵可略過 LLM 直接上屏。";
 
 /* Errors */
 "error.noApiKey" = "未設定 API 金鑰";
@@ -108,6 +113,23 @@
 
 "menu.launchAtLogin" = "登入時啟動";
 "menu.help" = "權限與說明";
+
+/* Trigger Key */
+"menu.triggerKey" = "觸發按鍵";
+"menu.triggerKey.fn" = "Fn / Globe（預設）";
+"menu.triggerKey.rightOption" = "右 Option ⌥";
+"menu.triggerKey.rightControl" = "右 Control ^";
+"menu.triggerKey.rightCommand" = "右 Command ⌘";
+"menu.triggerKey.fn.symbol" = "Fn";
+"menu.triggerKey.rightOption.symbol" = "右 Option ⌥";
+"menu.triggerKey.rightControl.symbol" = "右 Control ^";
+"menu.triggerKey.rightCommand.symbol" = "右 Command ⌘";
+"menu.holdKey" = "按住 %@";
+"menu.tapKey" = "單擊 %@";
+"menu.startVoiceInput" = "開始語音輸入";
+
+/* Other Settings */
+"menu.otherSettings" = "其他設定";
 
 /* Input Mode */
 "menu.inputMode" = "輸入方式";

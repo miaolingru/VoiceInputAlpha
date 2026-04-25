@@ -1,5 +1,27 @@
 import Cocoa
 
+// MARK: - 触发键配置
+
+struct TriggerKeyOption {
+    let keyCode: UInt16
+    let locKey: String          // 用于本地化菜单标题
+    let flagMask: CGEventFlags  // 对应的修饰键 flag
+    let symbolKey: String       // 本地化 key，用于顶部提示文字
+
+    static let all: [TriggerKeyOption] = [
+        TriggerKeyOption(keyCode: 63, locKey: "menu.triggerKey.fn",           flagMask: .maskSecondaryFn, symbolKey: "menu.triggerKey.fn.symbol"),
+        TriggerKeyOption(keyCode: 61, locKey: "menu.triggerKey.rightOption",  flagMask: .maskAlternate,   symbolKey: "menu.triggerKey.rightOption.symbol"),
+        TriggerKeyOption(keyCode: 62, locKey: "menu.triggerKey.rightControl", flagMask: .maskControl,     symbolKey: "menu.triggerKey.rightControl.symbol"),
+        TriggerKeyOption(keyCode: 54, locKey: "menu.triggerKey.rightCommand", flagMask: .maskCommand,     symbolKey: "menu.triggerKey.rightCommand.symbol"),
+    ]
+
+    static func option(for keyCode: UInt16) -> TriggerKeyOption {
+        all.first { $0.keyCode == keyCode } ?? all[0]
+    }
+}
+
+// MARK: - FnKeyMonitor
+
 final class FnKeyMonitor {
     private let onFnDown: () -> Void
     private let onFnUp: () -> Void
@@ -10,9 +32,14 @@ final class FnKeyMonitor {
     var onImmediateStop: (() -> Void)?      // Space/Backspace 立即上屏
     var isRecording = false                  // 由 AppDelegate 设置
 
+    // 当前触发键（可运行时修改，修改后自动重置按下状态）
+    var triggerKeyCode: UInt16 = 63 {
+        didSet { triggerIsDown = false }
+    }
+
+    private var triggerIsDown = false
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
-    private var fnIsDown = false
 
     private static let fnKeyCode: UInt16 = 0x3F  // 63
     private static let escKeyCode: UInt16 = 0x35  // 53
@@ -79,34 +106,42 @@ final class FnKeyMonitor {
             return Unmanaged.passUnretained(event)
         }
 
-        // 拦截 NX_SYSDEFINED（type 14）：Globe 键触发字符检视器的系统事件
+        // NX_SYSDEFINED（type 14）：仅在使用 Fn/Globe 作为触发键时才需要拦截系统字符检视器事件
         if type.rawValue == 14 {
-            let flags = event.flags
-            if flags.contains(.maskSecondaryFn) {
-                print("[FnKeyMonitor] 拦截 NX_SYSDEFINED (Fn/Globe)")
+            guard triggerKeyCode == FnKeyMonitor.fnKeyCode else {
+                return Unmanaged.passUnretained(event)
+            }
+            if let nsEvent = NSEvent(cgEvent: event) {
+                let subtype = nsEvent.subtype.rawValue
+                let data1 = nsEvent.data1
+                let keyCode = (data1 & 0xFFFF0000) >> 16
+                print("[FnKeyMonitor] NX_SYSDEFINED subtype=\(subtype) data1=\(data1) keyCode=\(keyCode) flags=\(event.flags.rawValue)")
+                if subtype == 211 {
+                    print("[FnKeyMonitor] 拦截 NX_SYSDEFINED subtype=211 (系统辅助控制)")
+                    return nil
+                }
+            }
+            if event.flags.contains(.maskSecondaryFn) {
+                print("[FnKeyMonitor] 拦截 NX_SYSDEFINED (Fn flag 检测)")
                 return nil
             }
             return Unmanaged.passUnretained(event)
         }
 
         let flags = event.flags
-        let hasFn = flags.contains(.maskSecondaryFn)
 
         if type == .keyDown || type == .keyUp {
             let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
-            if keyCode == FnKeyMonitor.fnKeyCode || hasFn {
-                print("[FnKeyMonitor] \(type == .keyDown ? "keyDown" : "keyUp") keyCode=\(keyCode) flags=\(flags.rawValue) hasFn=\(hasFn)")
-            }
 
-            // 拦截 Fn/Globe 键（keycode 63）
-            if keyCode == FnKeyMonitor.fnKeyCode {
-                if type == .keyDown && !fnIsDown {
-                    fnIsDown = true
-                    print("[FnKeyMonitor] >>> Fn 按下 (via keyDown)")
+            // Fn 专属路径：某些键盘上 Fn/Globe 键会产生真实的 keyDown/keyUp
+            if triggerKeyCode == FnKeyMonitor.fnKeyCode && keyCode == FnKeyMonitor.fnKeyCode {
+                if type == .keyDown && !triggerIsDown {
+                    triggerIsDown = true
+                    print("[FnKeyMonitor] >>> 触发键按下 (keyDown keyCode=63)")
                     onFnDown()
-                } else if type == .keyUp && fnIsDown {
-                    fnIsDown = false
-                    print("[FnKeyMonitor] >>> Fn 松开 (via keyUp)")
+                } else if type == .keyUp && triggerIsDown {
+                    triggerIsDown = false
+                    print("[FnKeyMonitor] >>> 触发键松开 (keyUp keyCode=63)")
                     onFnUp()
                 }
                 return nil
@@ -120,14 +155,14 @@ final class FnKeyMonitor {
                     DispatchQueue.main.async { [weak self] in
                         self?.onEscPressed?()
                     }
-                    return nil  // 吞掉 ESC
+                    return nil
 
                 case FnKeyMonitor.spaceKeyCode, FnKeyMonitor.backspaceKeyCode:
                     print("[FnKeyMonitor] >>> Space/Backspace 立即上屏")
                     DispatchQueue.main.async { [weak self] in
                         self?.onImmediateStop?()
                     }
-                    return nil  // 吞掉按键
+                    return nil
 
                 default:
                     break
@@ -139,36 +174,47 @@ final class FnKeyMonitor {
 
         if type == .flagsChanged {
             let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
-            let otherModifiers: CGEventFlags = [.maskCommand, .maskAlternate, .maskControl, .maskShift]
-            let hasOtherModifiers = !flags.intersection(otherModifiers).isEmpty
+            let option = TriggerKeyOption.option(for: triggerKeyCode)
 
-            print("[FnKeyMonitor] flagsChanged keyCode=\(keyCode) flags=\(flags.rawValue) hasFn=\(hasFn) hasOther=\(hasOtherModifiers)")
+            // 通用触发键检测：通过 keyCode 精确匹配当前触发键
+            if keyCode == triggerKeyCode {
+                let isActive = flags.contains(option.flagMask)
+                // 排除触发键自身 flag 后，检查是否有其他修饰键同时按下
+                let otherMods: CGEventFlags = [.maskCommand, .maskAlternate, .maskControl, .maskShift, .maskSecondaryFn]
+                let hasOtherMods = !flags.intersection(otherMods.subtracting(option.flagMask)).isEmpty
 
-            // 方式 1: 通过 keyCode 63 判断
-            if keyCode == FnKeyMonitor.fnKeyCode {
-                if hasFn && !fnIsDown && !hasOtherModifiers {
-                    fnIsDown = true
-                    print("[FnKeyMonitor] >>> Fn 按下 (via flagsChanged keyCode)")
+                print("[FnKeyMonitor] flagsChanged keyCode=\(keyCode) isActive=\(isActive) hasOtherMods=\(hasOtherMods)")
+
+                if isActive && !triggerIsDown && !hasOtherMods {
+                    triggerIsDown = true
+                    print("[FnKeyMonitor] >>> 触发键按下 (flagsChanged keyCode=\(keyCode))")
                     onFnDown()
-                } else if !hasFn && fnIsDown {
-                    fnIsDown = false
-                    print("[FnKeyMonitor] >>> Fn 松开 (via flagsChanged keyCode)")
+                    return nil
+                } else if !isActive && triggerIsDown {
+                    triggerIsDown = false
+                    print("[FnKeyMonitor] >>> 触发键松开 (flagsChanged keyCode=\(keyCode))")
                     onFnUp()
+                    return nil
                 }
-                return nil
             }
 
-            // 方式 2: 纯 flag 判断（备用，某些机型 keyCode 不是 63）
-            if hasFn && !fnIsDown && !hasOtherModifiers {
-                fnIsDown = true
-                print("[FnKeyMonitor] >>> Fn 按下 (via flagsChanged flags-only)")
-                onFnDown()
-                return nil
-            } else if !hasFn && fnIsDown {
-                fnIsDown = false
-                print("[FnKeyMonitor] >>> Fn 松开 (via flagsChanged flags-only)")
-                onFnUp()
-                return nil
+            // Fn 键 flag-only 备用检测（某些机型 keyCode 不稳定为 63）
+            if triggerKeyCode == FnKeyMonitor.fnKeyCode {
+                let hasFn = flags.contains(.maskSecondaryFn)
+                let otherModifiers: CGEventFlags = [.maskCommand, .maskAlternate, .maskControl, .maskShift]
+                let hasOtherModifiers = !flags.intersection(otherModifiers).isEmpty
+
+                if hasFn && !triggerIsDown && !hasOtherModifiers {
+                    triggerIsDown = true
+                    print("[FnKeyMonitor] >>> Fn 按下 (flagsChanged flags-only 备用)")
+                    onFnDown()
+                    return nil
+                } else if !hasFn && triggerIsDown {
+                    triggerIsDown = false
+                    print("[FnKeyMonitor] >>> Fn 松开 (flagsChanged flags-only 备用)")
+                    onFnUp()
+                    return nil
+                }
             }
         }
 

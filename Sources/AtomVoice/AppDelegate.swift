@@ -25,6 +25,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             "silenceAutoStopEnabled": false,
             "silenceDuration": 2.0,
             "silenceThreshold": -40.0,
+            "triggerKeyCode": 63,
         ])
 
         requestPermissions()
@@ -68,8 +69,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         )
+        fnKeyMonitor.triggerKeyCode = UInt16(UserDefaults.standard.integer(forKey: "triggerKeyCode"))
         fnKeyMonitor.onTapDisabled = { [weak self] in
             self?.menuBarController.showAccessibilityWarning()
+        }
+        menuBarController.onTriggerKeyChanged = { [weak self] keyCode in
+            self?.fnKeyMonitor.triggerKeyCode = keyCode
         }
         // ESC 取消录音（不上屏）
         fnKeyMonitor.onEscPressed = { [weak self] in self?.cancelRecording() }
@@ -201,7 +206,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
             if llmEnabled && !apiKey.isEmpty {
                 capsuleWindow.showRefining()
-                llmRefiner.refine(text: processedText) { [weak self] refined, errorMsg in
+                llmRefiner.refine(text: processedText, onProgress: { [weak self] partial in
+                    self?.capsuleWindow.updateText(partial)
+                }) { [weak self] refined, errorMsg in
                     DispatchQueue.main.async {
                         guard let self else { return }
                         if let errorMsg {

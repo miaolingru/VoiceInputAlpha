@@ -11,6 +11,7 @@ final class MenuBarController {
     private var settingsWindow: SettingsWindowController?
     private var aboutWindow: AboutWindowController?
     private var permissionsWindow: PermissionsWindowController?
+    var onTriggerKeyChanged: ((UInt16) -> Void)?
 
     private let languages: [(code: String, name: String)] = [
         ("en-US", "English"),
@@ -37,10 +38,17 @@ final class MenuBarController {
     private func rebuildMenu() {
         let menu = NSMenu()
 
-        let instructionKey = UserDefaults.standard.bool(forKey: "silenceAutoStopEnabled") ? "menu.tapFn" : "menu.holdFn"
-        let instructionItem = NSMenuItem(title: loc(instructionKey), action: nil, keyEquivalent: "")
-        instructionItem.isEnabled = false
-        menu.addItem(instructionItem)
+        // 顶部提示：按住/单击 [触发键] 开始语音输入
+        let savedKeyCode = UInt16(UserDefaults.standard.integer(forKey: "triggerKeyCode"))
+        let triggerOption = TriggerKeyOption.option(for: savedKeyCode == 0 ? 63 : savedKeyCode)
+        let isTapMode = UserDefaults.standard.bool(forKey: "silenceAutoStopEnabled")
+        let instructionFmt = loc(isTapMode ? "menu.tapKey" : "menu.holdKey")
+        let line1 = NSMenuItem(title: String(format: instructionFmt, loc(triggerOption.symbolKey)), action: nil, keyEquivalent: "")
+        line1.isEnabled = false
+        menu.addItem(line1)
+        let line2 = NSMenuItem(title: loc("menu.startVoiceInput"), action: nil, keyEquivalent: "")
+        line2.isEnabled = false
+        menu.addItem(line2)
 
         menu.addItem(.separator())
 
@@ -59,110 +67,6 @@ final class MenuBarController {
         langItem.submenu = langMenu
         menu.addItem(langItem)
 
-        // 音频输入设备
-        let audioInputItem = NSMenuItem(title: loc("menu.audioInput"), action: nil, keyEquivalent: "")
-        audioInputItem.image = icon("mic.badge.plus")
-        let audioInputMenu = NSMenu()
-        let savedUID = UserDefaults.standard.string(forKey: "audioInputDeviceUID") ?? ""
-
-        // 系统默认选项
-        let defaultItem = NSMenuItem(title: loc("menu.audioInput.default"), action: #selector(selectAudioInput(_:)), keyEquivalent: "")
-        defaultItem.target = self
-        defaultItem.representedObject = "" as String
-        defaultItem.state = savedUID.isEmpty ? .on : .off
-        audioInputMenu.addItem(defaultItem)
-        audioInputMenu.addItem(.separator())
-
-        // 列出所有输入设备
-        let devices = AudioEngineController.availableInputDevices()
-        for device in devices {
-            let item = NSMenuItem(title: device.name, action: #selector(selectAudioInput(_:)), keyEquivalent: "")
-            item.target = self
-            item.representedObject = device.uid
-            item.state = device.uid == savedUID ? .on : .off
-            audioInputMenu.addItem(item)
-        }
-
-        audioInputItem.submenu = audioInputMenu
-        menu.addItem(audioInputItem)
-
-        menu.addItem(.separator())
-
-        // 动画效果
-        let animItem = NSMenuItem(title: loc("menu.animation"), action: nil, keyEquivalent: "")
-        animItem.image = icon("sparkles")
-        let animMenu = NSMenu()
-        let currentAnim = UserDefaults.standard.string(forKey: "animationStyle") ?? "dynamicIsland"
-
-        for (title, key) in [(loc("menu.animation.dynamicIsland"), "dynamicIsland"),
-                              (loc("menu.animation.minimal"),       "minimal"),
-                              (loc("menu.animation.none"),          "none")] {
-            let item = NSMenuItem(title: title, action: #selector(selectAnimation(_:)), keyEquivalent: "")
-            item.target = self
-            item.representedObject = key
-            item.state = currentAnim == key ? .on : .off
-            animMenu.addItem(item)
-        }
-
-        // 动画速度
-        let currentSpeed = UserDefaults.standard.string(forKey: "animationSpeed") ?? "medium"
-        animMenu.addItem(.separator())
-        let speedLabel = NSMenuItem(title: loc("menu.animation.speed"), action: nil, keyEquivalent: "")
-        speedLabel.isEnabled = false
-        animMenu.addItem(speedLabel)
-
-        for (title, key) in [(loc("menu.animation.slow"), "slow"),
-                              (loc("menu.animation.medium"), "medium"),
-                              (loc("menu.animation.fast"), "fast")] {
-            let item = NSMenuItem(title: title, action: #selector(selectAnimSpeed(_:)), keyEquivalent: "")
-            item.target = self
-            item.representedObject = key
-            item.state = currentSpeed == key ? .on : .off
-            item.indentationLevel = 1
-            item.isEnabled = currentAnim == "dynamicIsland"
-            animMenu.addItem(item)
-        }
-
-        animItem.submenu = animMenu
-        menu.addItem(animItem)
-
-        // 输入方式: 单击说话 or 长按说话
-        let inputModeItem = NSMenuItem(title: loc("menu.inputMode"), action: nil, keyEquivalent: "")
-        inputModeItem.image = icon("waveform")
-        let inputModeMenu = NSMenu()
-        let isTapMode = UserDefaults.standard.bool(forKey: "silenceAutoStopEnabled")
-
-        let tapItem = NSMenuItem(title: loc("menu.inputMode.tap"), action: #selector(selectInputModeTap(_:)), keyEquivalent: "")
-        tapItem.target = self
-        tapItem.state = isTapMode ? .on : .off
-        inputModeMenu.addItem(tapItem)
-
-        let holdItem = NSMenuItem(title: loc("menu.inputMode.hold"), action: #selector(selectInputModeHold(_:)), keyEquivalent: "")
-        holdItem.target = self
-        holdItem.state = !isTapMode ? .on : .off
-        inputModeMenu.addItem(holdItem)
-
-        // 停录延迟仅在单击说话模式下显示
-        if isTapMode {
-            inputModeMenu.addItem(.separator())
-            let durationLabel = NSMenuItem(title: loc("menu.silence.duration"), action: nil, keyEquivalent: "")
-            durationLabel.isEnabled = false
-            inputModeMenu.addItem(durationLabel)
-
-            let currentDuration = UserDefaults.standard.double(forKey: "silenceDuration")
-            for (title, value) in [("0.5s", 0.5), ("1s", 1.0), ("1.5s", 1.5), ("2s", 2.0), ("3s", 3.0), ("5s", 5.0)] {
-                let item = NSMenuItem(title: title, action: #selector(selectSilenceDuration(_:)), keyEquivalent: "")
-                item.target = self
-                item.representedObject = value
-                item.state = abs(currentDuration - value) < 0.01 ? .on : .off
-                item.indentationLevel = 1
-                inputModeMenu.addItem(item)
-            }
-        }
-
-        inputModeItem.submenu = inputModeMenu
-        menu.addItem(inputModeItem)
-
         // 自动标点
         let punctEnabled = UserDefaults.standard.bool(forKey: "autoPunctuationEnabled")
         let punctItem = NSMenuItem(title: loc("menu.punctuation"), action: #selector(togglePunctuation(_:)), keyEquivalent: "")
@@ -176,7 +80,6 @@ final class MenuBarController {
         llmItem.image = icon("wand.and.stars")
         let llmMenu = NSMenu()
         let llmEnabled = UserDefaults.standard.bool(forKey: "llmEnabled")
-
         let toggleItem = NSMenuItem(
             title: llmEnabled ? loc("menu.llm.enabled") : loc("menu.llm.disabled"),
             action: #selector(toggleLLM(_:)),
@@ -185,49 +88,94 @@ final class MenuBarController {
         toggleItem.target = self
         toggleItem.state = llmEnabled ? .on : .off
         llmMenu.addItem(toggleItem)
-
         llmMenu.addItem(.separator())
-
         let settingsItem = NSMenuItem(title: loc("menu.settings"), action: #selector(openSettings(_:)), keyEquivalent: "")
         settingsItem.image = icon("gear")
         settingsItem.target = self
         llmMenu.addItem(settingsItem)
-
+        let howtoItem = NSMenuItem(title: loc("menu.llm.howto"), action: #selector(openLLMHowto(_:)), keyEquivalent: "")
+        howtoItem.image = icon("questionmark.circle")
+        howtoItem.target = self
+        llmMenu.addItem(howtoItem)
         llmItem.submenu = llmMenu
         menu.addItem(llmItem)
 
         menu.addItem(.separator())
 
-        // 开机启动
-        let launchAtLoginItem = NSMenuItem(title: loc("menu.launchAtLogin"),
-                                           action: #selector(toggleLaunchAtLogin(_:)),
-                                           keyEquivalent: "")
-        launchAtLoginItem.image = icon("power.circle")
-        launchAtLoginItem.target = self
-        launchAtLoginItem.state = isLaunchAtLoginEnabled ? .on : .off
-        menu.addItem(launchAtLoginItem)
+        // 输入方式: 单击说话 or 长按说话
+        let inputModeItem = NSMenuItem(title: loc("menu.inputMode"), action: nil, keyEquivalent: "")
+        inputModeItem.image = icon("waveform")
+        let inputModeMenu = NSMenu()
+        let tapItem = NSMenuItem(title: loc("menu.inputMode.tap"), action: #selector(selectInputModeTap(_:)), keyEquivalent: "")
+        tapItem.target = self
+        tapItem.state = isTapMode ? .on : .off
+        inputModeMenu.addItem(tapItem)
+        let holdItem = NSMenuItem(title: loc("menu.inputMode.hold"), action: #selector(selectInputModeHold(_:)), keyEquivalent: "")
+        holdItem.target = self
+        holdItem.state = !isTapMode ? .on : .off
+        inputModeMenu.addItem(holdItem)
+        if isTapMode {
+            inputModeMenu.addItem(.separator())
+            let durationLabel = NSMenuItem(title: loc("menu.silence.duration"), action: nil, keyEquivalent: "")
+            durationLabel.isEnabled = false
+            inputModeMenu.addItem(durationLabel)
+            let currentDuration = UserDefaults.standard.double(forKey: "silenceDuration")
+            for (title, value) in [("0.5s", 0.5), ("1s", 1.0), ("1.5s", 1.5), ("2s", 2.0), ("3s", 3.0), ("5s", 5.0)] {
+                let item = NSMenuItem(title: title, action: #selector(selectSilenceDuration(_:)), keyEquivalent: "")
+                item.target = self
+                item.representedObject = value
+                item.state = abs(currentDuration - value) < 0.01 ? .on : .off
+                item.indentationLevel = 1
+                inputModeMenu.addItem(item)
+            }
+        }
+        inputModeItem.submenu = inputModeMenu
+        menu.addItem(inputModeItem)
 
-        // 权限与帮助
-        let helpItem = NSMenuItem(title: loc("menu.help"),
-                                  action: #selector(openPermissions(_:)),
-                                  keyEquivalent: "")
-        helpItem.image = hasAllPermissions ? icon("checkmark.shield") : icon("exclamationmark.shield")
-        helpItem.target = self
-        menu.addItem(helpItem)
+        // 触发按键
+        let triggerItem = NSMenuItem(title: loc("menu.triggerKey"), action: nil, keyEquivalent: "")
+        triggerItem.image = icon("command")
+        let triggerMenu = NSMenu()
+        for option in TriggerKeyOption.all {
+            let item = NSMenuItem(title: loc(option.locKey), action: #selector(selectTriggerKey(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = NSNumber(value: Int(option.keyCode))
+            item.state = option.keyCode == triggerOption.keyCode ? .on : .off
+            triggerMenu.addItem(item)
+        }
+        triggerItem.submenu = triggerMenu
+        menu.addItem(triggerItem)
+
+        // 音频输入设备
+        let audioInputItem = NSMenuItem(title: loc("menu.audioInput"), action: nil, keyEquivalent: "")
+        audioInputItem.image = icon("mic.badge.plus")
+        let audioInputMenu = NSMenu()
+        let savedUID = UserDefaults.standard.string(forKey: "audioInputDeviceUID") ?? ""
+        let defaultItem = NSMenuItem(title: loc("menu.audioInput.default"), action: #selector(selectAudioInput(_:)), keyEquivalent: "")
+        defaultItem.target = self
+        defaultItem.representedObject = "" as String
+        defaultItem.state = savedUID.isEmpty ? .on : .off
+        audioInputMenu.addItem(defaultItem)
+        audioInputMenu.addItem(.separator())
+        for device in AudioEngineController.availableInputDevices() {
+            let item = NSMenuItem(title: device.name, action: #selector(selectAudioInput(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = device.uid
+            item.state = device.uid == savedUID ? .on : .off
+            audioInputMenu.addItem(item)
+        }
+        audioInputItem.submenu = audioInputMenu
+        menu.addItem(audioInputItem)
 
         menu.addItem(.separator())
 
-        let updateItem = NSMenuItem(title: loc("menu.checkForUpdates"), action: #selector(checkForUpdates(_:)), keyEquivalent: "")
-        updateItem.image = icon("arrow.down.circle")
-        updateItem.target = self
-        menu.addItem(updateItem)
+        // 其他设置（子菜单：动画效果、开机启动、权限与帮助、检查更新、关于）
+        let otherItem = NSMenuItem(title: loc("menu.otherSettings"), action: nil, keyEquivalent: "")
+        otherItem.image = icon("ellipsis.circle")
+        otherItem.submenu = buildOtherSettingsMenu()
+        menu.addItem(otherItem)
 
-        let betaItem = NSMenuItem(title: loc("menu.betaUpdates"), action: #selector(toggleBetaUpdates(_:)), keyEquivalent: "")
-        betaItem.image = icon("flask")
-        betaItem.target = self
-        betaItem.state = UserDefaults.standard.bool(forKey: "includeBetaUpdates") ? .on : .off
-        betaItem.indentationLevel = 1
-        menu.addItem(betaItem)
+        menu.addItem(.separator())
 
         let aboutItem = NSMenuItem(title: loc("menu.about"), action: #selector(openAbout(_:)), keyEquivalent: "")
         aboutItem.image = icon("info.circle")
@@ -240,6 +188,79 @@ final class MenuBarController {
         menu.addItem(quitItem)
 
         statusItem.menu = menu
+    }
+
+    private func buildOtherSettingsMenu() -> NSMenu {
+        let m = NSMenu()
+
+        // 动画效果
+        let animItem = NSMenuItem(title: loc("menu.animation"), action: nil, keyEquivalent: "")
+        animItem.image = icon("sparkles")
+        let animMenu = NSMenu()
+        let currentAnim = UserDefaults.standard.string(forKey: "animationStyle") ?? "dynamicIsland"
+        for (title, key) in [(loc("menu.animation.dynamicIsland"), "dynamicIsland"),
+                              (loc("menu.animation.minimal"),       "minimal"),
+                              (loc("menu.animation.none"),          "none")] {
+            let item = NSMenuItem(title: title, action: #selector(selectAnimation(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = key
+            item.state = currentAnim == key ? .on : .off
+            animMenu.addItem(item)
+        }
+        let currentSpeed = UserDefaults.standard.string(forKey: "animationSpeed") ?? "medium"
+        animMenu.addItem(.separator())
+        let speedLabel = NSMenuItem(title: loc("menu.animation.speed"), action: nil, keyEquivalent: "")
+        speedLabel.isEnabled = false
+        animMenu.addItem(speedLabel)
+        for (title, key) in [(loc("menu.animation.slow"), "slow"),
+                              (loc("menu.animation.medium"), "medium"),
+                              (loc("menu.animation.fast"), "fast")] {
+            let item = NSMenuItem(title: title, action: #selector(selectAnimSpeed(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = key
+            item.state = currentSpeed == key ? .on : .off
+            item.indentationLevel = 1
+            item.isEnabled = currentAnim == "dynamicIsland"
+            animMenu.addItem(item)
+        }
+        animItem.submenu = animMenu
+        m.addItem(animItem)
+
+        m.addItem(.separator())
+
+        // 开机启动
+        let launchAtLoginItem = NSMenuItem(title: loc("menu.launchAtLogin"),
+                                           action: #selector(toggleLaunchAtLogin(_:)),
+                                           keyEquivalent: "")
+        launchAtLoginItem.image = icon("power.circle")
+        launchAtLoginItem.target = self
+        launchAtLoginItem.state = isLaunchAtLoginEnabled ? .on : .off
+        m.addItem(launchAtLoginItem)
+
+        // 权限与帮助
+        let helpItem = NSMenuItem(title: loc("menu.help"),
+                                  action: #selector(openPermissions(_:)),
+                                  keyEquivalent: "")
+        helpItem.image = hasAllPermissions ? icon("checkmark.shield") : icon("exclamationmark.shield")
+        helpItem.target = self
+        m.addItem(helpItem)
+
+        m.addItem(.separator())
+
+        // 检查更新
+        let updateItem = NSMenuItem(title: loc("menu.checkForUpdates"), action: #selector(checkForUpdates(_:)), keyEquivalent: "")
+        updateItem.image = icon("arrow.down.circle")
+        updateItem.target = self
+        m.addItem(updateItem)
+
+        let betaItem = NSMenuItem(title: loc("menu.betaUpdates"), action: #selector(toggleBetaUpdates(_:)), keyEquivalent: "")
+        betaItem.image = icon("flask")
+        betaItem.target = self
+        betaItem.state = UserDefaults.standard.bool(forKey: "includeBetaUpdates") ? .on : .off
+        betaItem.indentationLevel = 1
+        m.addItem(betaItem)
+
+        return m
     }
 
     // MARK: - Launch at Login
@@ -265,6 +286,14 @@ final class MenuBarController {
         guard let code = sender.representedObject as? String else { return }
         UserDefaults.standard.set(code, forKey: "selectedLanguage")
         onLanguageChanged()
+        rebuildMenu()
+    }
+
+    @objc private func selectTriggerKey(_ sender: NSMenuItem) {
+        guard let num = sender.representedObject as? NSNumber else { return }
+        let keyCode = UInt16(num.intValue)
+        UserDefaults.standard.set(Int(keyCode), forKey: "triggerKeyCode")
+        onTriggerKeyChanged?(keyCode)
         rebuildMenu()
     }
 
@@ -349,6 +378,14 @@ final class MenuBarController {
 
     @objc private func checkForUpdates(_ sender: NSMenuItem) {
         UpdateChecker.shared.checkForUpdates(silent: false)
+    }
+
+    @objc private func openLLMHowto(_ sender: NSMenuItem) {
+        let alert = NSAlert()
+        alert.messageText = loc("menu.llm.howto")
+        alert.informativeText = loc("llm.howto.message")
+        alert.addButton(withTitle: NSLocalizedString("OK", comment: ""))
+        alert.runModal()
     }
 
     @objc private func openAbout(_ sender: NSMenuItem) {

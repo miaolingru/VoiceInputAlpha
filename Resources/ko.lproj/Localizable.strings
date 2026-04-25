@@ -18,11 +18,13 @@
 "menu.llm" = "LLM 텍스트 최적화";
 "menu.llm.enabled" = "활성화됨";
 "menu.llm.disabled" = "비활성화됨";
+"menu.llm.howto" = "LLM 최적화 사용 방법";
 "menu.settings" = "설정...";
 "menu.quit" = "종료";
 
 /* Settings */
 "settings.title" = "LLM 텍스트 최적화 설정";
+"settings.llm.desc" = "LLM을 사용하여 음성 인식 오류를 자동으로 수정하고 구두점을 최적화합니다. API 키를 입력하면 활성화됩니다.";
 "settings.provider" = "공급자:";
 "settings.apiUrl" = "API 주소:";
 "settings.apiKey" = "API 키:";
@@ -59,6 +61,9 @@
 "about.bilibili" = "Bilibili";
 "about.github" = "GitHub 프로젝트";
 "about.copyright" = "© 2026 缪凌儒BlackSquare\nAll rights reserved.";
+
+/* LLM How-to */
+"llm.howto.message" = "1. 공급자를 선택합니다（OpenAI、Anthropic、DeepSeek 또는 사용자 지정）。\n2. API 키를 입력합니다.\n3. 모델을 선택하고 저장합니다.\n4. 메뉴에서 「LLM 텍스트 최적화」를 활성화합니다.\n\n녹음이 끝나면 인식된 텍스트가 LLM으로 전송되어 수정됩니다. 스트리밍 출력으로 실시간 미리보기가 가능합니다. 녹음 중 스페이스 또는 백스페이스를 누르면 LLM을 건너뛰고 바로 입력할 수 있습니다.";
 
 /* Errors */
 "error.noApiKey" = "API 키가 설정되지 않았습니다";
@@ -108,6 +113,23 @@
 
 "menu.launchAtLogin" = "로그인 시 시작";
 "menu.help" = "권한 및 도움말";
+
+/* Trigger Key */
+"menu.triggerKey" = "트리거 키";
+"menu.triggerKey.fn" = "Fn / Globe (기본값)";
+"menu.triggerKey.rightOption" = "오른쪽 Option ⌥";
+"menu.triggerKey.rightControl" = "오른쪽 Control ^";
+"menu.triggerKey.rightCommand" = "오른쪽 Command ⌘";
+"menu.triggerKey.fn.symbol" = "Fn";
+"menu.triggerKey.rightOption.symbol" = "오른쪽 Option ⌥";
+"menu.triggerKey.rightControl.symbol" = "오른쪽 Control ^";
+"menu.triggerKey.rightCommand.symbol" = "오른쪽 Command ⌘";
+"menu.holdKey" = "%@ 길게 눌러";
+"menu.tapKey" = "%@ 클릭하여";
+"menu.startVoiceInput" = "음성 입력 시작";
+
+/* Other Settings */
+"menu.otherSettings" = "기타 설정";
 
 /* Input Mode */
 "menu.inputMode" = "입력 방식";

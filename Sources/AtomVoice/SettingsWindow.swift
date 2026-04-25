@@ -13,7 +13,8 @@ final class ProviderStore {
 
     static let defaults: [LLMProvider] = [
         LLMProvider(name: "OpenAI",            baseURL: "https://api.openai.com/v1",                           defaultModel: "gpt-4o-mini"),
-        LLMProvider(name: "DeepSeek",          baseURL: "https://api.deepseek.com/v1",                         defaultModel: "deepseek-chat"),
+        LLMProvider(name: "Anthropic (Claude)",baseURL: "https://api.anthropic.com/v1",                        defaultModel: "claude-sonnet-4-6"),
+        LLMProvider(name: "DeepSeek",          baseURL: "https://api.deepseek.com/v1",                         defaultModel: "deepseek-v4-flash"),
         LLMProvider(name: "Moonshot (Kimi)",   baseURL: "https://api.moonshot.cn/v1",                          defaultModel: "moonshot-v1-8k"),
         LLMProvider(name: "阿里云百炼 (Qwen)", baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1",   defaultModel: "qwen-turbo"),
         LLMProvider(name: "智谱 AI (GLM)",     baseURL: "https://open.bigmodel.cn/api/paas/v4",                defaultModel: "glm-4-flash"),
@@ -408,7 +409,7 @@ final class SettingsWindowController: NSObject {
 
     private func buildWindow() {
         let w = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 480, height: 0),
+            contentRect: NSRect(x: 0, y: 0, width: 560, height: 370),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -416,112 +417,160 @@ final class SettingsWindowController: NSObject {
         w.title = loc("settings.title")
         w.isReleasedWhenClosed = false
 
-        // ── 直接使用系统 contentView，不替换它 ──────────────
         guard let cv = w.contentView else { return }
 
-        // 主垂直 StackView
-        let vStack = NSStackView()
-        vStack.orientation = .vertical
-        vStack.spacing = 0
-        vStack.alignment = .leading
-        vStack.translatesAutoresizingMaskIntoConstraints = false
-        cv.addSubview(vStack)
+        let pad: CGFloat = 24
+        let labelW: CGFloat = 120
+        let gap: CGFloat = 8
 
-        NSLayoutConstraint.activate([
-            vStack.topAnchor.constraint(equalTo: cv.topAnchor, constant: 20),
-            vStack.leadingAnchor.constraint(equalTo: cv.leadingAnchor, constant: 20),
-            vStack.trailingAnchor.constraint(equalTo: cv.trailingAnchor, constant: -20),
-            vStack.bottomAnchor.constraint(equalTo: cv.bottomAnchor, constant: -20),
-        ])
-
-        // ── 表单区（NSGridView） ──────────────────────────────
-        let formGrid = NSGridView()
-        formGrid.rowSpacing = 10
-        formGrid.columnSpacing = 8
-        formGrid.translatesAutoresizingMaskIntoConstraints = false
-
-        // 服务商行 = popup + 管理按钮
+        // ── 控件 ─────────────────────────────────────────────
         providers = ProviderStore.load()
         providerPopup = NSPopUpButton()
-        providerPopup.translatesAutoresizingMaskIntoConstraints = false
         providerPopup.target = self
         providerPopup.action = #selector(providerChanged(_:))
         providers.forEach { providerPopup.addItem(withTitle: $0.name) }
 
-        let manageBtn = NSButton(title: "管理...", target: self, action: #selector(editProviders(_:)))
-        manageBtn.bezelStyle = .rounded
-
-        let providerRow = NSStackView(views: [providerPopup, manageBtn])
-        providerRow.orientation = .horizontal
-        providerRow.spacing = 8
+        let manageBtn = makeButton(loc("settings.manage"), action: #selector(editProviders(_:)))
 
         apiBaseURLField = makeField(placeholder: "https://api.openai.com/v1")
-        apiKeyField = makeSecureField(placeholder: "sk-...")
-        modelField  = makeField(placeholder: "gpt-4o-mini")
+        apiKeyField     = makeSecureField(placeholder: "sk-...")
+        modelField      = makeField(placeholder: "gpt-4o-mini")
 
-        // 延迟行 = 下拉选项
         delayPopup = NSPopUpButton()
-        delayPopup.translatesAutoresizingMaskIntoConstraints = false
         for v in delayOptions {
-            let title = v == 0 ? loc("settings.delay.immediate") : String(format: "%.1fs", v)
-            delayPopup.addItem(withTitle: title)
+            delayPopup.addItem(withTitle: v == 0 ? loc("settings.delay.immediate") : String(format: "%.1fs", v))
         }
-        delayPopup.widthAnchor.constraint(equalToConstant: 100).isActive = true
 
-        // 提示词
         let promptBtn = makeButton(loc("settings.prompt.edit"), action: #selector(editPrompt(_:)))
 
-        let rows: [(String, NSView)] = [
-            ("服务商:", providerRow),
-            ("API 地址:", apiBaseURLField),
-            ("API 密钥:", apiKeyField),
-            ("模型:", modelField),
-            (loc("settings.prompt.label"), promptBtn),
-            ("结果展示延迟:", delayPopup),
-        ]
-        for (title, control) in rows {
-            let label = NSTextField(labelWithString: title)
-            label.font = .systemFont(ofSize: 13)
-            label.textColor = .secondaryLabelColor
-            label.alignment = .right
-            formGrid.addRow(with: [label, control])
-        }
-        // 标签列右对齐、固定宽度
-        formGrid.column(at: 0).xPlacement = .trailing
-        formGrid.column(at: 0).width = 96
-        // 控件列拉伸填满
-        formGrid.column(at: 1).xPlacement = .fill
-
-        vStack.addArrangedSubview(formGrid)
-        formGrid.widthAnchor.constraint(equalTo: vStack.widthAnchor).isActive = true
-
-        // ── 分割线 ────────────────────────────────────────────
-        let sep = NSBox()
-        sep.boxType = .separator
-        sep.translatesAutoresizingMaskIntoConstraints = false
-        vStack.addArrangedSubview(sep)
-        sep.widthAnchor.constraint(equalTo: vStack.widthAnchor).isActive = true
-        vStack.setCustomSpacing(16, after: formGrid)
-        vStack.setCustomSpacing(16, after: sep)
-
-        // ── 底部行：状态 + 按钮 ───────────────────────────────
         statusLabel = NSTextField(labelWithString: "")
         statusLabel.font = .systemFont(ofSize: 12)
         statusLabel.textColor = .secondaryLabelColor
-        statusLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
-        let testBtn   = makeButton("测试连接", action: #selector(testConnection(_:)))
-        let cancelBtn = makeButton("取消",     action: #selector(cancelSettings(_:)))
-        let saveBtn   = makeButton("保存",     action: #selector(saveSettings(_:)), isPrimary: true)
-        saveBtn.keyEquivalent = "\r"
+        let testBtn   = makeButton(loc("settings.test"),   action: #selector(testConnection(_:)))
+        let cancelBtn = makeButton(loc("settings.cancel"), action: #selector(cancelSettings(_:)))
+        let saveBtn   = makeButton(loc("settings.save"),   action: #selector(saveSettings(_:)), isPrimary: true)
+        saveBtn.keyEquivalent   = "\r"
         cancelBtn.keyEquivalent = "\u{1b}"
 
+        // ── 说明文字 ──────────────────────────────────────────────
+        let descLabel = NSTextField(labelWithString: loc("settings.llm.desc"))
+        descLabel.font = .systemFont(ofSize: 12)
+        descLabel.textColor = .secondaryLabelColor
+        descLabel.lineBreakMode = .byWordWrapping
+        descLabel.maximumNumberOfLines = 0
+        descLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        // ── 辅助：构造单行 HStack（左侧固定宽度标签 + 右侧控件） ─
+        func makeRow(labelText: String, control: NSView) -> NSView {
+            let label = NSTextField(labelWithString: labelText)
+            label.font = .systemFont(ofSize: 13)
+            label.textColor = .secondaryLabelColor
+            label.alignment = .right
+            label.translatesAutoresizingMaskIntoConstraints = false
+            label.widthAnchor.constraint(equalToConstant: labelW).isActive = true
+
+            let row = NSStackView(views: [label, control])
+            row.orientation = .horizontal
+            row.spacing = gap
+            row.alignment = .centerY
+            row.translatesAutoresizingMaskIntoConstraints = false
+            return row
+        }
+
+        // 服务商行：popup 自动拉伸，管理按钮紧跟其后
+        let providerCtrl = NSStackView(views: [providerPopup, manageBtn])
+        providerCtrl.orientation = .horizontal
+        providerCtrl.spacing = gap
+        providerCtrl.alignment = .centerY
+
+        // 延迟行：popup 固定宽，不拉伸
+        let delayWrap = NSStackView(views: [delayPopup])
+        delayWrap.orientation = .horizontal
+        delayWrap.alignment = .centerY
+        delayPopup.widthAnchor.constraint(equalToConstant: 110).isActive = true
+
+        // ── 表单垂直 StackView ────────────────────────────────
+        let form = NSStackView()
+        form.orientation = .vertical
+        form.spacing = 10
+        form.alignment = .leading
+        form.translatesAutoresizingMaskIntoConstraints = false
+
+        let formRows: [(String, NSView)] = [
+            (loc("settings.provider"),     providerCtrl),
+            (loc("settings.apiUrl"),       apiBaseURLField),
+            (loc("settings.apiKey"),       apiKeyField),
+            (loc("settings.model"),        modelField),
+            (loc("settings.prompt.label"), promptBtn),
+            (loc("settings.delay"),        delayWrap),
+        ]
+        for (text, ctrl) in formRows {
+            let row = makeRow(labelText: text, control: ctrl)
+            form.addArrangedSubview(row)
+        }
+
+        // 分割线
+        let sep = NSBox()
+        sep.boxType = .separator
+        sep.translatesAutoresizingMaskIntoConstraints = false
+
+        // 底部：状态标签（左）+ 按钮组（右）
         let bottomRow = NSStackView(views: [statusLabel, testBtn, cancelBtn, saveBtn])
         bottomRow.orientation = .horizontal
-        bottomRow.spacing = 8
+        bottomRow.spacing = gap
         bottomRow.alignment = .centerY
-        vStack.addArrangedSubview(bottomRow)
-        bottomRow.widthAnchor.constraint(equalTo: vStack.widthAnchor).isActive = true
+        // 让 statusLabel 撑开左侧空间，按钮靠右
+        bottomRow.setCustomSpacing(0, after: statusLabel)
+        statusLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        statusLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        // ── 整体 ─────────────────────────────────────────────
+        let root = NSView()
+        root.translatesAutoresizingMaskIntoConstraints = false
+        cv.addSubview(root)
+
+        [descLabel, form, sep, bottomRow].forEach {
+            $0.translatesAutoresizingMaskIntoConstraints = false
+            root.addSubview($0)
+        }
+
+        NSLayoutConstraint.activate([
+            // root 贴满 contentView（带 padding）
+            root.topAnchor.constraint(equalTo: cv.topAnchor, constant: pad),
+            root.leadingAnchor.constraint(equalTo: cv.leadingAnchor, constant: pad),
+            root.trailingAnchor.constraint(equalTo: cv.trailingAnchor, constant: -pad),
+            root.bottomAnchor.constraint(equalTo: cv.bottomAnchor, constant: -pad),
+
+            // 说明文字
+            descLabel.topAnchor.constraint(equalTo: root.topAnchor),
+            descLabel.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            descLabel.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+
+            // 表单在说明文字下方
+            form.topAnchor.constraint(equalTo: descLabel.bottomAnchor, constant: 12),
+            form.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            form.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+
+            // 各行控件拉满 form 宽度（label 固定 + 控件填充剩余）
+            // → 由 makeRow 内的 NSStackView 自动处理
+
+            // 分割线
+            sep.topAnchor.constraint(equalTo: form.bottomAnchor, constant: 16),
+            sep.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            sep.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+
+            // 底部行
+            bottomRow.topAnchor.constraint(equalTo: sep.bottomAnchor, constant: 16),
+            bottomRow.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            bottomRow.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+            bottomRow.bottomAnchor.constraint(equalTo: root.bottomAnchor),
+        ])
+
+        // 让 form 内每行右侧控件自动拉满
+        for sub in form.arrangedSubviews {
+            sub.trailingAnchor.constraint(equalTo: form.trailingAnchor).isActive = true
+        }
 
         self.window = w
         w.delegate = self
@@ -539,6 +588,9 @@ final class SettingsWindowController: NSObject {
         f.font = .systemFont(ofSize: 13)
         f.placeholderString = placeholder
         f.translatesAutoresizingMaskIntoConstraints = false
+        f.cell?.wraps = false
+        f.cell?.isScrollable = true
+        f.delegate = self
         return f
     }
 
@@ -548,6 +600,9 @@ final class SettingsWindowController: NSObject {
         f.font = .systemFont(ofSize: 13)
         f.placeholderString = placeholder
         f.translatesAutoresizingMaskIntoConstraints = false
+        f.cell?.wraps = false
+        f.cell?.isScrollable = true
+        f.delegate = self
         return f
     }
 
@@ -652,5 +707,16 @@ extension SettingsWindowController: NSWindowDelegate {
         if let w = notification.object as? NSWindow {
             AppDelegate.resetActivationIfNeeded(closing: w)
         }
+    }
+}
+
+extension SettingsWindowController: NSTextFieldDelegate {
+    // Enter 键跳到下一个输入框，而不是插入换行
+    func control(_ control: NSControl, textView: NSTextView, doCommandBy selector: Selector) -> Bool {
+        if selector == #selector(NSResponder.insertNewline(_:)) {
+            control.window?.selectNextKeyView(nil)
+            return true
+        }
+        return false
     }
 }
