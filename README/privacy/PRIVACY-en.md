@@ -66,7 +66,7 @@ If you do not enable LLM text refinement, AtomVoice will not send recognized tex
 
 AtomVoice checks for new versions via GitHub Releases. When checking for updates, the app sends a request to GitHub for the latest version information. GitHub may receive network request information, such as IP address, device network information, and User-Agent, in accordance with its own policies.
 
-AtomVoice does not proactively send your recordings, recognized text, clipboard content, or LLM API keys during update checks.
+AtomVoice does not send your recordings, recognized text, clipboard content, or LLM API keys during update checks.
 
 ## 6. Permissions
 

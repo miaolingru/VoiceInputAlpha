@@ -66,7 +66,7 @@ Wenn Sie die LLM-Textverfeinerung nicht aktivieren, sendet AtomVoice keinen erka
 
 AtomVoice prüft auf neue Versionen über GitHub Releases. Bei der Aktualisierungsprüfung sendet die Anwendung eine Anfrage an GitHub, um die neueste Versionsinformationen zu erhalten. GitHub kann gemäß seinen eigenen Richtlinien Netzwerkanfrage-Informationen wie IP-Adresse, Gerätenetzwerkinformationen und User-Agent empfangen.
 
-AtomVoice sendet bei der Aktualisierungsprüfung nicht aktiv Ihre Aufnahmen, erkannten Text, Zwischenablage-Inhalte oder LLM API-Schlüssel.
+AtomVoice sendet bei der Aktualisierungsprüfung keine Aufnahmen, erkannten Text, Zwischenablage-Inhalte oder LLM API-Schlüssel.
 
 ## 6. Berechtigungen
 

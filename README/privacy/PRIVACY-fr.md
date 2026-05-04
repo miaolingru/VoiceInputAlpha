@@ -66,7 +66,7 @@ Si vous n'activez pas le raffinement de texte LLM, AtomVoice n'enverra pas de te
 
 AtomVoice vérifie les nouvelles versions via GitHub Releases. Lors de la vérification des mises à jour, l'application envoie une requête à GitHub pour obtenir les informations de la dernière version. GitHub peut recevoir des informations de requête réseau, telles que l'adresse IP, les informations réseau de l'appareil et le User-Agent, conformément à ses propres politiques.
 
-AtomVoice n'envoie pas proactivement vos enregistrements, texte reconnu, contenu du presse-papiers ou clés API LLM lors des vérifications de mise à jour.
+AtomVoice n'envoie pas vos enregistrements, texte reconnu, contenu du presse-papiers ou clés API LLM lors des vérifications de mise à jour.
 
 ## 6. Autorisations
 

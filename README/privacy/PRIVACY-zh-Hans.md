@@ -66,7 +66,7 @@ LLM 文本优化默认关闭。
 
 AtomVoice 会通过 GitHub Releases 检查是否有新版本。检查更新时，应用会向 GitHub 请求最新版本信息。GitHub 可能会根据其自身政策接收网络请求信息，例如 IP 地址、设备网络信息和 User-Agent。
 
-AtomVoice 不会在更新检查中主动发送你的录音、识别文本、剪贴板内容或 LLM API Key。
+AtomVoice 不会在更新检查中发送你的录音、识别文本、剪贴板内容或 LLM API Key。
 
 ## 6. 权限说明
 

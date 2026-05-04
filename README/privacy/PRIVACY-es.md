@@ -66,7 +66,7 @@ Si no habilita el refinamiento de texto LLM, AtomVoice no enviará texto reconoc
 
 AtomVoice verifica nuevas versiones a través de GitHub Releases. Al verificar actualizaciones, la aplicación envía una solicitud a GitHub para obtener la información de la última versión. GitHub puede recibir información de solicitud de red, como dirección IP, información de red del dispositivo y User-Agent, de acuerdo con sus propias políticas.
 
-AtomVoice no envía proactivamente sus grabaciones, texto reconocido, contenido del portapapeles ni claves API LLM durante las verificaciones de actualización.
+AtomVoice no envía sus grabaciones, texto reconocido, contenido del portapapeles ni claves API LLM durante las verificaciones de actualización.
 
 ## 6. Permisos
 
