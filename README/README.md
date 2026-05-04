@@ -1,8 +1,6 @@
-[中文](README-zh.md) | **English**
-
 # AtomVoice
 
-<p align="center"><img src="AppIcon-1024.png" width="128"></p>
+<p align="center"><img src="../AppIcon-1024.png" width="128"></p>
 
 A lightweight macOS menu bar voice input app. Hold **Fn** to record, release to inject transcribed text into any focused input field.
 
@@ -79,25 +77,6 @@ make run      # Build and launch
 make install  # Install to /Applications
 make release  # Build Universal + AppleSilicon + Intel packages
 make clean    # Clean build artifacts
-```
-
-## Project Structure
-
-```
-Sources/AtomVoice/
-├── AppDelegate.swift          # App entry, recording pipeline
-├── FnKeyMonitor.swift         # Global Fn key monitoring (CGEvent tap)
-├── AudioEngine.swift          # AVAudioEngine + FFT band analysis
-├── SpeechRecognizer.swift     # Apple Speech Recognition streaming
-├── CapsuleWindow.swift        # Floating capsule (NSPanel + spring animation)
-├── WaveformView.swift         # Spectrum waveform (sine-wave driven)
-├── PunctuationProcessor.swift # Local auto-punctuation engine
-├── LLMRefiner.swift           # OpenAI-compatible API refinement
-├── TextInjector.swift         # Clipboard injection + IME switching
-├── MenuBarController.swift    # Menu bar
-├── SettingsWindow.swift       # LLM settings + provider management
-├── AboutWindow.swift          # About window
-└── Localization.swift         # i18n helper
 ```
 
 ## License

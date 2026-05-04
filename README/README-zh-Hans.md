@@ -1,8 +1,6 @@
-**中文** | [English](README.md)
-
 # AtomVoice（原子微语）
 
-<p align="center"><img src="AppIcon-1024.png" width="128"></p>
+<p align="center"><img src="../AppIcon-1024.png" width="128"></p>
 
 轻量级 macOS 菜单栏语音输入法。按住 **Fn** 键录音，松开后文字自动注入当前输入框。
 
@@ -79,25 +77,6 @@ make run      # 构建并启动
 make install  # 安装到 /Applications
 make release  # 构建 Universal + AppleSilicon + Intel 三个版本
 make clean    # 清理构建产物
-```
-
-## 项目结构
-
-```
-Sources/AtomVoice/
-├── AppDelegate.swift          # 应用入口，录音流水线
-├── FnKeyMonitor.swift         # Fn 键全局监听（CGEvent tap）
-├── AudioEngine.swift          # AVAudioEngine + FFT 频段分析
-├── SpeechRecognizer.swift     # Apple 语音识别流式接口
-├── CapsuleWindow.swift        # 胶囊悬浮窗（NSPanel + 弹簧动画）
-├── WaveformView.swift         # 频谱波形视图
-├── PunctuationProcessor.swift # 本地自动标点规则引擎
-├── LLMRefiner.swift           # OpenAI 兼容 API 纠错
-├── TextInjector.swift         # 剪贴板注入 + 输入法切换
-├── MenuBarController.swift    # 菜单栏控制
-├── SettingsWindow.swift       # LLM 设置 + 服务商管理
-├── AboutWindow.swift          # 关于页面
-└── Localization.swift         # 多语言辅助
 ```
 
 ## License
