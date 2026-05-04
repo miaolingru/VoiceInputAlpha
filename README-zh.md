@@ -2,6 +2,8 @@
 
 # AtomVoice（原子微语）
 
+<p align="center"><img src="AppIcon-1024.png" width="128"></p>
+
 轻量级 macOS 菜单栏语音输入法。按住 **Fn** 键录音，松开后文字自动注入当前输入框。
 
 ![macOS 13+](https://img.shields.io/badge/macOS-13%2B-blue) ![Swift](https://img.shields.io/badge/Swift-5.9-orange) ![License](https://img.shields.io/badge/license-MIT-green)
