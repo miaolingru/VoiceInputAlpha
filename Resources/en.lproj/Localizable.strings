@@ -133,6 +133,7 @@
 
 "menu.launchAtLogin" = "Launch at Login";
 "menu.help" = "Permissions & Help";
+"menu.privacyPolicy" = "Privacy Policy";
 
 /* Trigger Key */
 "menu.triggerKey" = "Trigger Key";

@@ -134,6 +134,7 @@
 /* Launch at Login */
 "menu.launchAtLogin" = "开机启动";
 "menu.help" = "权限与帮助";
+"menu.privacyPolicy" = "隐私政策";
 
 /* Trigger Key */
 "menu.triggerKey" = "触发按键";

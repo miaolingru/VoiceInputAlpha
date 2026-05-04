@@ -133,6 +133,7 @@
 
 "menu.launchAtLogin" = "登入時啟動";
 "menu.help" = "權限與說明";
+"menu.privacyPolicy" = "隱私政策";
 
 /* Trigger Key */
 "menu.triggerKey" = "觸發按鍵";

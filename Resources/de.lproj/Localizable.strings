@@ -133,6 +133,7 @@
 
 "menu.launchAtLogin" = "Beim Starten öffnen";
 "menu.help" = "Berechtigungen & Hilfe";
+"menu.privacyPolicy" = "Datenschutzrichtlinie";
 
 /* Trigger Key */
 "menu.triggerKey" = "Auslösertaste";

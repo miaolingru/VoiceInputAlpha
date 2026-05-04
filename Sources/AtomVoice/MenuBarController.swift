@@ -302,6 +302,14 @@ final class MenuBarController {
         helpItem.target = self
         m.addItem(helpItem)
 
+        // 隐私政策
+        let privacyItem = NSMenuItem(title: loc("menu.privacyPolicy"),
+                                     action: #selector(openPrivacyPolicy(_:)),
+                                     keyEquivalent: "")
+        privacyItem.image = icon("hand.raised")
+        privacyItem.target = self
+        m.addItem(privacyItem)
+
         m.addItem(.separator())
 
         // 检查更新
@@ -661,6 +669,30 @@ final class MenuBarController {
     @objc private func openPermissions(_ sender: NSMenuItem) {
         if permissionsWindow == nil { permissionsWindow = PermissionsWindowController() }
         permissionsWindow?.showWindow()
+    }
+
+    @objc private func openPrivacyPolicy(_ sender: NSMenuItem) {
+        let lang = Locale.preferredLanguages.first ?? "en"
+        let file: String
+        if lang.hasPrefix("zh-Hant") || lang.hasPrefix("zh-TW") || lang.hasPrefix("zh-HK") {
+            file = "PRIVACY-zh-Hant.md"
+        } else if lang.hasPrefix("zh") {
+            file = "PRIVACY-zh-Hans.md"
+        } else if lang.hasPrefix("ja") {
+            file = "PRIVACY-ja.md"
+        } else if lang.hasPrefix("ko") {
+            file = "PRIVACY-ko.md"
+        } else if lang.hasPrefix("es") {
+            file = "PRIVACY-es.md"
+        } else if lang.hasPrefix("fr") {
+            file = "PRIVACY-fr.md"
+        } else if lang.hasPrefix("de") {
+            file = "PRIVACY-de.md"
+        } else {
+            file = "PRIVACY-en.md"
+        }
+        let url = URL(string: "https://github.com/BlackSquarre/AtomVoice/blob/main/README/privacy/\(file)")!
+        NSWorkspace.shared.open(url)
     }
 
     @objc private func toggleBetaUpdates(_ sender: NSMenuItem) {

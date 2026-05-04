@@ -133,6 +133,7 @@
 
 "menu.launchAtLogin" = "로그인 시 시작";
 "menu.help" = "권한 및 도움말";
+"menu.privacyPolicy" = "개인정보 처리방침";
 
 /* Trigger Key */
 "menu.triggerKey" = "트리거 키";
