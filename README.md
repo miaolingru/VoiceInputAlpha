@@ -21,9 +21,9 @@ Small app bundle, near-zero CPU when idle, no background daemons. Sherpa models 
 ## Features
 
 ### Recording & input
-- **Hold-to-talk** or **tap-to-talk** with silence auto-stop (0.5 / 1 / 1.5 / 2 / 3 / 5 s)
-- **Custom trigger key** — Fn / Right Option / Right Control / Right Command
-- **In-recording shortcuts** — `ESC` cancels, `Space` / `Backspace` / typed punctuation injects immediately and skips LLM
+- **Hold-to-talk or tap-to-talk** — your choice, with optional silence-based auto-stop
+- **Customizable trigger key** — pick whichever modifier fits your keyboard
+- **In-recording shortcuts** — cancel the take, inject immediately and skip LLM polish, or end with a punctuation in one keypress
 - **Auto-cancel on app switch** (hold mode only)
 
 ### Recognition engines
