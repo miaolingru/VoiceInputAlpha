@@ -1,45 +1,72 @@
-[English](README.md) | **简体中文** | [繁體中文](README-zh-Hant.md) | [日本語](README-ja.md) | [한국어](README-ko.md) | [Español](README-es.md) | [Français](README-fr.md) | [Deutsch](README-de.md)
+[English](../README.md) | **简体中文** | [繁體中文](README-zh-Hant.md) | [日本語](README-ja.md) | [한국어](README-ko.md) | [Español](README-es.md) | [Français](README-fr.md) | [Deutsch](README-de.md)
 
 # AtomVoice（原子微语）
 
 <p align="center"><img src="AppIcon-1024.png" width="128"></p>
 
-轻量级 macOS 菜单栏语音输入法。按住 **Fn** 键录音，松开后文字自动注入当前输入框。
+按一下，开口说。— 轻量、隐私优先的语音输入工具，文字直接落进任意 Mac 应用，没有时长限制。
 
-![macOS 13+](https://img.shields.io/badge/macOS-13%2B-blue) ![Swift](https://img.shields.io/badge/Swift-5.9-orange) ![License](https://img.shields.io/badge/license-MIT-green)
+![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![Swift](https://img.shields.io/badge/Swift-5.9-orange) ![License](https://img.shields.io/badge/license-MIT-green)
 
 ---
 
 ### 🔒 隐私优先
-所有语音识别均通过 Apple 语音识别框架**在本地完成**，音频不会发送到任何服务器（除非主动开启 LLM 文本优化）。
+语音识别默认在**本地完成**——可选 Apple 语音识别或内置的 Sherpa-ONNX 本地引擎。除非你主动启用 LLM 文本优化，否则音频永远不会离开你的 Mac。
 
 ### ⚡ 极致轻量
-约 3 MB，空闲时 CPU 占用趋近于零，无后台进程。
+应用包体积小，空闲时 CPU 占用趋近于零，无后台守护进程。Sherpa 模型按需下载，系统内存吃紧时会自动释放。
 
 ---
 
 ## 功能特性
 
-- **按住 Fn 键**录音，松开即将文字注入当前输入框
-- **流式转录** — 基于 Apple 语音识别框架，默认简体中文
-- **5 频段实时频谱波形** — 100–6000 Hz，左低频右高频，由 Accelerate FFT 驱动
-- **本地自动标点** — 根据语气词补全句末标点，无需联网
-- **LLM 文本优化** — 接入 OpenAI 兼容 API，自动纠错（如配森→Python）；内置 9 个服务商预设，列表可自由编辑
-- **灵动岛风格动画** — 120Hz 真实弹簧物理积分 + 高斯模糊；"优化中"时全胶囊扫光效果
-- **深色/浅色模式自适应** — macOS 26 液态玻璃，旧系统毛玻璃降级
-- **7 种界面语言** — 简体中文、繁體中文、English、日本語、한국어、Español、Français、Deutsch
-- **CJK 输入法兼容** — 注入前自动切换输入源，防止中文输入法拦截
+### 录音与触发
+- **长按说话 / 单击说话** — 任选其一，可配合静音自动停止
+- **自定义触发键** — 选一个最顺手的修饰键即可
+- **录音中快捷键** — 一键取消、立即上屏跳过 LLM、或一键以指定标点收尾
+- **切换前台应用自动取消**（仅长按模式）
+
+### 识别引擎
+- **Apple 语音识别** — 流式识别，可选设备端模式；**滚动分段**突破 SFSpeechRecognizer 1 分钟硬限制
+- **Sherpa-ONNX** — 完全离线的本地引擎，首次使用自动下载模型，含本地标点模型
+- **8 种识别语言** — English、简体中文、繁體中文、日本語、한국어、Español、Français、Deutsch
+
+### 文字输出
+- **Apple 实时上屏** — 录音过程中已完成的句子自动逐句注入，无需等到松手
+- **智能标点** — 本地启发式标点引擎（多语言）；光标后已有标点时自动跳过
+- **中日韩输入法兼容** — 粘贴前临时切到 ASCII 布局，完成后恢复
+- **LLM 文本优化** — 同时支持 OpenAI 兼容协议与 **Anthropic**，流式预览；内置 10 个服务商预设 + 可自由编辑的自定义列表；自带多语言默认 prompt，也可自定义
+
+### 界面与动画
+- **5 频段 FFT 频谱波形**，针对人声共振峰调校（100–4200 Hz），由 Accelerate 驱动
+- **三种动画风格** — 灵动岛（Spotlight 式弹性 + 高斯模糊）/ 极简 / 无；三档速度，自适应 ProMotion 120Hz
+- **液态玻璃**（macOS 26）/ **毛玻璃**（macOS 14/15）
+- **8 种界面语言**，跟随系统自动选择
+
+### 系统集成
+- **自动更新** — 从 GitHub Releases 拉取，下载后做代码签名验证（可选 Beta 通道）
+- **开机自启动**（SMAppService）
+- **音频输入设备选择** — 任意系统麦克风可选
+- **录音时降低系统音量**（可选）
+- **单实例保护** — 启动时自动关闭旧实例
 
 ## 系统要求
 
-- macOS 13 Ventura 及以上
+- **macOS 14 Sonoma 及以上**
 - 需要权限：**辅助功能**、**麦克风**、**语音识别**
 
 ## 安装
 
 **从 Release 下载（推荐）**
 
-前往 [Releases](https://github.com/BlackSquarre/AtomVoice/releases)，下载对应架构的 zip，解压后拖入应用程序文件夹。
+前往 [Releases](https://github.com/BlackSquarre/AtomVoice/releases)，下载对应架构的 zip，解压后拖入应用程序文件夹。每次发版提供 Universal / Apple Silicon / Intel 三种架构。
+
+**Homebrew**
+
+```bash
+brew tap BlackSquarre/tap
+brew install --cask atomvoice
+```
 
 **从源码构建**
 
@@ -61,23 +88,29 @@ make install
 
 | 操作 | 说明 |
 |------|------|
-| 按住 Fn | 开始录音 |
-| 松开 Fn | 停止录音，文字自动注入 |
-| 点击菜单栏图标 | 切换语言 / 动画 / LLM 设置 |
+| 长按触发键 | 开始录音（长按模式） |
+| 松开触发键 | 停止录音并注入文字 |
+| 单击触发键 | 开始 / 停止录音（单击模式） |
+| 录音中按 `ESC` | 取消，不上屏 |
+| 录音中按 `空格` / `退格` | 立即上屏，跳过 LLM |
+| 录音中输入标点 | 立即上屏并附加该标点 |
+| 点击菜单栏图标 | 切换引擎 / 语言 / 模式 / 动画 / LLM |
 
 ## LLM 优化配置
 
-菜单栏 → **LLM 文本优化** → **设置** — 选择服务商预设或自定义添加，填入 API Key 和模型名称。
+菜单栏 → **LLM 文本优化** → **设置** — 选择服务商预设或自定义添加，填入 API Key 和模型名称。流式输出会在胶囊里实时预览。
 
-内置预设：OpenAI / DeepSeek / Moonshot (Kimi) / 阿里云百炼 (Qwen) / 智谱 AI (GLM) / 零一万物 (Yi) / Groq / Ollama（本地）
+内置预设：**OpenAI** / **Anthropic** / DeepSeek / Moonshot (Kimi) / 阿里云百炼 (Qwen) / 智谱 AI (GLM) / 零一万物 (Yi) / Groq / **Ollama（本地）** / 自定义。
+
+默认 system prompt 针对口述润色专门调校（修复同音字、错认的产品名/API 名、口头禅、标点），并根据识别语言自动切换。也可以填自己的 prompt 覆盖。
 
 ## 构建命令
 
 ```bash
-make build    # 构建 .app bundle
-make run      # 构建并启动
+make dev      # Debug 构建，带 DEBUG_BUILD 标记，安装到 dist/Test/
+make run      # 构建并启动（当前架构，debug）
 make install  # 安装到 /Applications
-make release  # 构建 Universal + AppleSilicon + Intel 三个版本
+make release  # 构建 Universal + Apple Silicon + Intel 三个 zip 到 dist/
 make clean    # 清理构建产物
 ```
 

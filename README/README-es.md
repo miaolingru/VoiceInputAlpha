@@ -1,45 +1,72 @@
-[English](README.md) | [简体中文](README-zh-Hans.md) | [繁體中文](README-zh-Hant.md) | [日本語](README-ja.md) | [한국어](README-ko.md) | **Español** | [Français](README-fr.md) | [Deutsch](README-de.md)
+[English](../README.md) | [简体中文](README-zh-Hans.md) | [繁體中文](README-zh-Hant.md) | [日本語](README-ja.md) | [한국어](README-ko.md) | **Español** | [Français](README-fr.md) | [Deutsch](README-de.md)
 
 # AtomVoice
 
 <p align="center"><img src="AppIcon-1024.png" width="128"></p>
 
-Una aplicación ligera de entrada de voz para la barra de menú de macOS. Mantén presionado **Fn** para grabar, suelta para inyectar el texto transcrito en cualquier campo de entrada activo.
+Pulsa, habla. — dictado por voz ligero y centrado en la privacidad, que escribe en cualquier app de tu Mac, sin límite de tiempo.
 
-![macOS 13+](https://img.shields.io/badge/macOS-13%2B-blue) ![Swift](https://img.shields.io/badge/Swift-5.9-orange) ![License](https://img.shields.io/badge/license-MIT-green)
+![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![Swift](https://img.shields.io/badge/Swift-5.9-orange) ![License](https://img.shields.io/badge/license-MIT-green)
 
 ---
 
-### 🔒 Privacidad primero
-Todo el reconocimiento de voz se ejecuta **localmente** a través del framework de reconocimiento de voz de Apple. Ningún audio se envía a ningún servidor a menos que habilites explícitamente la Optimización LLM.
+### 🔒 Privacidad ante todo
+El reconocimiento de voz se ejecuta **en el dispositivo** por defecto, ya sea con el reconocimiento de voz de Apple o con el motor local Sherpa-ONNX integrado. El audio nunca sale de tu Mac salvo que actives explícitamente el refinamiento por LLM.
 
 ### ⚡ Ligero
-Paquete de aplicación de ~3 MB. CPU casi a cero en inactivo. Sin daemon en segundo plano.
+Bundle pequeño, uso de CPU casi nulo en reposo, sin demonios en segundo plano. Los modelos Sherpa se descargan bajo demanda y se liberan automáticamente cuando hay presión de memoria.
 
 ---
 
-## Características
+## Funciones
 
-- **Mantén Fn** para grabar, suelta para inyectar texto en cualquier campo de entrada
-- **Transcripción en tiempo real** — Reconocimiento de voz de Apple, predeterminado en chino simplificado
-- **Forma de onda espectral de 5 bandas FFT** — 100–6000 Hz, de baja a alta de izquierda a derecha, impulsado por Accelerate
-- **Puntuación automática** — Motor de reglas local que añade marcas de fin de oración, sin conexión a internet
-- **Optimización LLM** — API compatible con OpenAI que corrige términos mal reconocidos (ej: 配森→Python); 9 proveedores predefinidos + lista personalizable
-- **Animación Dynamic Island** — Física de resorte real a 120 Hz con desenfoque gaussiano
-- **Modo oscuro/claro** — Liquid Glass en macOS 26, desenfoque de efecto visual en sistemas anteriores
-- **7 idiomas de interfaz** — English, 简体中文, 繁體中文, 日本語, 한국어, Español, Français, Deutsch
-- **Compatible con IME CJK** — Cambia automáticamente a fuente de entrada ASCII antes de pegar
+### Grabación y activación
+- **Mantener para hablar** o **pulsar para hablar** — a tu elección, con parada automática por silencio opcional
+- **Tecla de activación personalizable** — elige el modificador que mejor se adapte a tu teclado
+- **Atajos durante la grabación** — cancelar la toma, insertar de inmediato saltándose el LLM o cerrar con un signo de puntuación con una sola tecla
+- **Cancelación automática al cambiar de app** (solo modo mantener)
+
+### Motores de reconocimiento
+- **Reconocimiento de voz de Apple** — streaming, modo en el dispositivo opcional, **segmentación rodante** que rompe el límite de 1 minuto de SFSpeechRecognizer
+- **Sherpa-ONNX** — motor local totalmente offline, los modelos se descargan automáticamente al primer uso e incluyen un modelo de puntuación
+- **8 idiomas de reconocimiento** — English, 简体中文, 繁體中文, 日本語, 한국어, Español, Français, Deutsch
+
+### Salida de texto
+- **Inserción en vivo de Apple** — las frases completas se insertan durante la grabación, sin esperar a soltar la tecla
+- **Puntuación inteligente** — motor heurístico local (por idioma); se omite automáticamente si el cursor ya tiene un signo de puntuación detrás
+- **Compatible con IME CJK** — cambia temporalmente al diseño ASCII antes de pegar y lo restaura después
+- **Refinamiento por LLM** — APIs compatibles con OpenAI **y Anthropic** con vista previa en streaming; 10 proveedores predefinidos + lista personalizada totalmente editable; system prompt por defecto multilingüe o el tuyo propio
+
+### UI y animación
+- **Forma de onda de espectro FFT de 5 bandas** ajustada a la voz humana (100–4200 Hz), impulsada por Accelerate
+- **Tres estilos de animación** — Dynamic Island (resorte estilo Spotlight + desenfoque gaussiano), Minimal, Ninguna — tres velocidades, compatible con ProMotion 120 Hz
+- **Liquid Glass** en macOS 26, **Visual Effect blur** en macOS 14/15
+- **8 idiomas de UI**, detectados automáticamente desde el sistema
+
+### Integración con el sistema
+- **Actualización automática** desde GitHub Releases con verificación de firma (canal Beta opcional)
+- **Inicio al iniciar sesión** (SMAppService)
+- **Selector de dispositivo de entrada** — elige cualquier micrófono del sistema
+- **Bajar el volumen del sistema mientras grabas** (opcional)
+- **Protección de instancia única** — la instancia anterior se cierra automáticamente al iniciar
 
 ## Requisitos
 
-- macOS 13 Ventura o posterior
-- Permisos requeridos: **Accesibilidad**, **Micrófono**, **Reconocimiento de voz**
+- **macOS 14 Sonoma o posterior**
+- Permisos: **Accesibilidad**, **Micrófono**, **Reconocimiento de voz**
 
 ## Instalación
 
 **Desde Release (recomendado)**
 
-Descarga desde [Releases](https://github.com/BlackSquarre/AtomVoice/releases), descomprime y arrastra a Aplicaciones.
+Descarga desde [Releases](https://github.com/BlackSquarre/AtomVoice/releases), descomprime y arrastra a Aplicaciones. Cada versión publica tres arquitecturas: Universal / Apple Silicon / Intel.
+
+**Homebrew**
+
+```bash
+brew tap BlackSquarre/tap
+brew install --cask atomvoice
+```
 
 **Compilar desde el código fuente**
 
@@ -51,34 +78,40 @@ make install
 
 ## ⚠️ Aviso de Gatekeeper
 
-Firma ad-hoc (sin notarización). En la primera apertura:
+Firma ad-hoc (no notarizada). En la primera apertura:
 
-1. Haz clic derecho en `AtomVoice.app` → **Abrir** → haz clic en **Abrir**
-2. O ve a **Ajustes del Sistema → Privacidad y Seguridad** → **Abrir de todos modos**
+1. Clic derecho en `AtomVoice.app` → **Abrir** → **Abrir**
+2. O ve a **Ajustes del sistema → Privacidad y seguridad** → **Abrir de todos modos**
 3. O ejecuta: `xattr -cr /Applications/AtomVoice.app`
 
 ## Uso
 
 | Acción | Resultado |
 |--------|-----------|
-| Mantener Fn | Iniciar grabación |
-| Soltar Fn | Detener e inyectar texto |
-| Icono de la barra de menús | Cambiar idioma / animación / configuración LLM |
+| Mantener tecla de activación | Inicia grabación (modo mantener) |
+| Soltar tecla de activación | Detiene e inserta texto |
+| Pulsar tecla de activación | Inicia / detiene grabación (modo pulsar) |
+| `ESC` durante grabación | Cancela, no se inserta texto |
+| `Espacio` / `Retroceso` durante grabación | Inserta de inmediato, salta LLM |
+| Escribir un signo de puntuación durante grabación | Inserta + añade ese signo |
+| Icono de la barra de menús | Cambiar motor / idioma / modo / animación / LLM |
 
-## Configuración de Optimización LLM
+## Configuración del refinamiento por LLM
 
-Barra de menús → **Optimización LLM** → **Ajustes** — selecciona un proveedor predefinido o añade el tuyo, ingresa la API Key y el nombre del modelo.
+Barra de menús → **Refinamiento por LLM** → **Ajustes** — elige un proveedor predefinido o añade el tuyo, introduce la API key y el nombre del modelo. La salida en streaming se previsualiza en vivo dentro de la cápsula.
 
-Proveedores predefinidos: OpenAI / DeepSeek / Moonshot (Kimi) / Qwen / GLM / Yi / Groq / Ollama (local)
+Predefinidos integrados: **OpenAI** / **Anthropic** / DeepSeek / Moonshot (Kimi) / Qwen / GLM / Yi / Groq / **Ollama (local)** / Personalizado.
+
+El system prompt por defecto está afinado para pulir dictado (corregir homófonos, nombres de productos/APIs mal transcritos, muletillas, puntuación) y cambia automáticamente según el idioma de reconocimiento. Puedes sobrescribirlo con tu propio prompt.
 
 ## Comandos de compilación
 
 ```bash
-make build    # Compilar paquete .app
-make run      # Compilar e iniciar
+make dev      # Build de debug con DEBUG_BUILD, instalado en dist/Test/
+make run      # Build y lanzamiento (arquitectura actual, debug)
 make install  # Instalar en /Applications
-make release  # Compilar paquetes Universal + AppleSilicon + Intel
-make clean    # Limpiar artefactos de compilación
+make release  # Genera zips Universal + Apple Silicon + Intel en dist/
+make clean    # Limpia artefactos de build
 ```
 
 ## License

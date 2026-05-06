@@ -1,45 +1,72 @@
-[English](README.md) | [简体中文](README-zh-Hans.md) | [繁體中文](README-zh-Hant.md) | **日本語** | [한국어](README-ko.md) | [Español](README-es.md) | [Français](README-fr.md) | [Deutsch](README-de.md)
+[English](../README.md) | [简体中文](README-zh-Hans.md) | [繁體中文](README-zh-Hant.md) | **日本語** | [한국어](README-ko.md) | [Español](README-es.md) | [Français](README-fr.md) | [Deutsch](README-de.md)
 
-# AtomVoice（原子微語）
+# AtomVoice
 
 <p align="center"><img src="AppIcon-1024.png" width="128"></p>
 
-軽量 macOS メニューバー音声入力アプリ。**Fn** キーを押して録音し、離すと文字が現在の入力欄に自動挿入されます。
+押して、話す。— 軽量・プライバシー優先の音声ディクテーション。文字はそのまま任意の Mac アプリに入力され、録音時間に制限はありません。
 
-![macOS 13+](https://img.shields.io/badge/macOS-13%2B-blue) ![Swift](https://img.shields.io/badge/Swift-5.9-orange) ![License](https://img.shields.io/badge/license-MIT-green)
+![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![Swift](https://img.shields.io/badge/Swift-5.9-orange) ![License](https://img.shields.io/badge/license-MIT-green)
 
 ---
 
 ### 🔒 プライバシー優先
-すべての音声認識は Apple の音声認識フレームワークを使用し**デバイス上で完結**します。LLM 最適化を明示的に有効にしない限り、音声データがサーバーに送信されることはありません。
+音声認識はデフォルトで**端末上で完結**します。Apple 音声認識または同梱の Sherpa-ONNX ローカルエンジンを選択可能。LLM テキスト最適化を明示的に有効にしない限り、音声が Mac の外に出ることはありません。
 
-### ⚡ 軽量
-アプリバンドル約 3 MB。アイドル時の CPU 使用率はほぼゼロ。バックグラウンドデーモンなし。
+### ⚡ 軽量設計
+アプリ本体は小さく、待機時の CPU 使用率はほぼゼロ、バックグラウンド常駐プロセスもありません。Sherpa モデルは必要に応じてダウンロードされ、メモリ圧迫時には自動的に解放されます。
 
 ---
 
 ## 機能
 
-- **Fn キーを押して**録音、離すとテキストが入力欄に自動挿入
-- **ストリーミング転写** — Apple 音声認識、デフォルトは中国語（簡体字）
-- **5 バンド FFT スペクトル波形** — 100–6000 Hz、左が低音右が高音、Accelerate フレームワーク駆動
-- **自動句読点** — ローカルルールエンジンが文末句読点を追加、インターネット不要
-- **LLM 最適化** — OpenAI 互換 API で転写ミスを自動修正（例：配森→Python）；9 つのプロバイダープリセット + カスタムリスト
-- **ダイナミックアイランドアニメーション** — 120Hz のスプリング物理シミュレーション + ガウスブラー
-- **ダーク/ライトモード自動切替** — macOS 26 では Liquid Glass、旧システムでは Visual Effect ブラー
-- **7 つの UI 言語** — 簡体中文、繁體中文、English、日本語、한국어、Español、Français、Deutsch
-- **CJK IME 対応** — ペースト前に自動で ASCII 入力ソースに切替
+### 録音とトリガー
+- **長押し / シングルタップ** の 2 モード、無音自動停止と組み合わせ可能
+- **トリガーキーをカスタマイズ** — 自分のキーボードに合った修飾キーを選択
+- **録音中ショートカット** — 1 キーでキャンセル、LLM をスキップして即時挿入、句読点で即終了
+- **アプリ切り替え時に自動キャンセル**(長押しモードのみ)
 
-## システム要件
+### 認識エンジン
+- **Apple 音声認識** — ストリーミング、端末上認識オプション、**ローリング分割**で SFSpeechRecognizer の 1 分制限を突破
+- **Sherpa-ONNX** — 完全オフラインのローカルエンジン、初回使用時にモデルを自動ダウンロード、句読点モデルも同梱
+- **8 言語の音声認識** — English、简体中文、繁體中文、日本語、한국어、Español、Français、Deutsch
 
-- macOS 13 Ventura 以降
-- 必要な権限：**アシスト機能**、**マイク**、**音声認識**
+### テキスト出力
+- **Apple リアルタイム挿入** — 録音中に完成した文をそのまま挿入、キーを離す前に反映
+- **スマート句読点** — ローカルのヒューリスティックな句読点エンジン(言語別);カーソル直後にすでに句読点がある場合は自動でスキップ
+- **CJK IME 互換** — 貼り付け前に一時的に ASCII レイアウトに切り替え、完了後に復元
+- **LLM テキスト最適化** — OpenAI 互換プロトコルと **Anthropic** に対応、ストリーミングプレビュー;10 種のプリセット + 自由編集可能なカスタムリスト;多言語のデフォルト system prompt または独自 prompt
+
+### UI とアニメーション
+- **5 バンド FFT スペクトル波形** — 人声に最適化(100–4200 Hz)、Accelerate ベース
+- **3 種のアニメーション** — Dynamic Island(Spotlight 風スプリング + ガウシアンブラー)/ ミニマル / なし、3 段階速度、ProMotion 120Hz 対応
+- **Liquid Glass**(macOS 26)/ **Visual Effect ブラー**(macOS 14/15)
+- **8 言語の UI**、システム言語に追従
+
+### システム連携
+- **自動アップデート** — GitHub Releases から取得、コード署名検証付き(Beta チャネルもオプションで)
+- **ログイン時に自動起動**(SMAppService)
+- **オーディオ入力デバイス選択** — 任意のマイクを指定可能
+- **録音中にシステム音量を下げる**(オプション)
+- **シングルインスタンス保護** — 起動時に古いインスタンスを自動終了
+
+## 動作要件
+
+- **macOS 14 Sonoma 以降**
+- 必要な権限:**アクセシビリティ**、**マイク**、**音声認識**
 
 ## インストール
 
-**Release からダウンロード（推奨）**
+**Release からダウンロード(推奨)**
 
-[Releases](https://github.com/BlackSquarre/AtomVoice/releases) からダウンロードし、zip を解凍して Applications にドラッグ。
+[Releases](https://github.com/BlackSquarre/AtomVoice/releases) から対応するアーキテクチャの zip をダウンロードし、解凍してアプリケーションフォルダにドラッグ。各リリースで Universal / Apple Silicon / Intel の 3 種類を提供。
+
+**Homebrew**
+
+```bash
+brew tap BlackSquarre/tap
+brew install --cask atomvoice
+```
 
 **ソースからビルド**
 
@@ -49,36 +76,42 @@ cd AtomVoice
 make install
 ```
 
-## ⚠️ Gatekeeper 警告
+## ⚠️ 署名について
 
-アドホック署名（ノータリゼーション未実施）。初回起動時：
+アドホック署名で、Apple の公証は受けていません。初回起動時:
 
 1. `AtomVoice.app` を右クリック → **開く** → **開く** をクリック
-2. または**システム設定 → プライバシーとセキュリティ** → **无论如何都打开**
-3. ターミナルで実行：`xattr -cr /Applications/AtomVoice.app`
+2. または **システム設定 → プライバシーとセキュリティ** → **このまま開く**
+3. またはターミナルで:`xattr -cr /Applications/AtomVoice.app`
 
 ## 使い方
 
-| 操作 | 結果 |
+| 操作 | 動作 |
 |------|------|
-| Fn キーを押す | 録音開始 |
-| Fn キーを離す | 録音停止、テキストを挿入 |
-| メニューバーアイコン | 言語 / アニメーション / LLM 設定の切替 |
+| トリガーキー長押し | 録音開始(長押しモード) |
+| トリガーキーを離す | 録音終了し文字を挿入 |
+| トリガーキーをタップ | 録音の開始 / 停止(タップモード) |
+| 録音中に `ESC` | キャンセル、文字は挿入されない |
+| 録音中に `Space` / `Backspace` | 即座に挿入、LLM をスキップ |
+| 録音中に句読点を入力 | 即座に挿入し、その句読点を付加 |
+| メニューバーアイコン | エンジン / 言語 / モード / アニメーション / LLM の切り替え |
 
-## LLM 最適化設定
+## LLM 最適化の設定
 
-メニューバー → **LLM 最適化** → **設定** — プロバイダープリセットを選択するかカスタムを追加し、API キーとモデル名を入力。
+メニューバー → **LLM テキスト最適化** → **設定** — プリセットを選択するかカスタム追加し、API キーとモデル名を入力。ストリーミング出力はカプセル内でリアルタイムにプレビューされます。
 
-プリセット：OpenAI / DeepSeek / Moonshot (Kimi) / Qwen / GLM / Yi / Groq / Ollama（ローカル）
+組み込みプリセット:**OpenAI** / **Anthropic** / DeepSeek / Moonshot (Kimi) / Qwen / GLM / Yi / Groq / **Ollama(ローカル)** / カスタム。
+
+デフォルトの system prompt はディクテーション後の整形向けに調整(同音異義語、誤認識された製品名・API 名、フィラー、句読点を修正)され、認識言語に応じて自動切替。独自の prompt で上書きも可能です。
 
 ## ビルドコマンド
 
 ```bash
-make build    # .app バンドルをビルド
-make run      # ビルドして起動
+make dev      # DEBUG_BUILD フラグ付き、dist/Test/ にインストール
+make run      # ビルドして起動(現在のアーキテクチャ、debug)
 make install  # /Applications にインストール
-make release  # Universal + AppleSilicon + Intel の 3 パッケージをビルド
-make clean    # ビルド成果物を削除
+make release  # dist/ に Universal + Apple Silicon + Intel の zip を生成
+make clean    # ビルド成果物をクリア
 ```
 
 ## License
