@@ -1,0 +1,74 @@
+name: Update Homebrew Tap
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-homebrew:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout AtomVoice
+        uses: actions/checkout@v4
+
+      - name: Get release info
+        id: release
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+          # 下载 Universal zip
+          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/v${VERSION}/AtomVoice-${VERSION}-Universal.zip"
+          curl -L -o /tmp/AtomVoice.zip "$DOWNLOAD_URL"
+          
+          # 计算 SHA256
+          SHA256=$(shasum -a 256 /tmp/AtomVoice.zip | cut -d' ' -f1)
+          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+          echo "download_url=$DOWNLOAD_URL" >> $GITHUB_OUTPUT
+
+      - name: Checkout homebrew-tap
+        uses: actions/checkout@v4
+        with:
+          repository: BlackSquarre/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-tap
+
+      - name: Update cask file
+        run: |
+          VERSION="${{ steps.release.outputs.version }}"
+          SHA256="${{ steps.release.outputs.sha256 }}"
+          
+          cat > homebrew-tap/Casks/atomvoice.rb << EOF
+          cask "atomvoice" do
+            version "${VERSION}"
+            sha256 "${SHA256}"
+
+            url "https://github.com/BlackSquarre/AtomVoice/releases/download/v\${VERSION}/AtomVoice-\${VERSION}-Universal.zip"
+            name "AtomVoice"
+            desc "macOS menu bar voice input tool - press Fn to record, release to inject text"
+            homepage "https://github.com/BlackSquarre/AtomVoice"
+
+            livecheck do
+              url :url
+              strategy :github_latest
+            end
+
+            depends_on macos: ">= :sonoma"
+
+            app "AtomVoice.app"
+
+            zap trash: [
+              "~/Library/Application Support/AtomVoice",
+              "~/Library/Preferences/com.blacksquarre.AtomVoice.plist",
+            ]
+          end
+          EOF
+
+      - name: Commit and push
+        run: |
+          cd homebrew-tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Update AtomVoice to v${{ steps.release.outputs.version }}"
+          git push
