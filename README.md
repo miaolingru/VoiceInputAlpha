@@ -7,7 +7,7 @@
 <h3 align="center">Press, speak.</h3>
 <p align="center">Lightweight, privacy-first voice dictation that types into any Mac app, with no time limit.</p>
 
-![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![Swift](https://img.shields.io/badge/Swift-5.9-orange) ![License](https://img.shields.io/badge/license-MIT-green)
+
 
 ---
 

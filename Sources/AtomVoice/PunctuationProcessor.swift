@@ -2,7 +2,7 @@ import Foundation
 
 struct PunctuationProcessor {
 
-    /// 对转录文本补全缺失的句末标点
+    /// 对转录文本补全缺失的句末标点（Add missing sentence-ending punctuation to transcribed text）
     static func process(_ text: String, language: String) -> String {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return text }
@@ -10,6 +10,7 @@ struct PunctuationProcessor {
         let isCJK = language.hasPrefix("zh") || language.hasPrefix("ja") || language.hasPrefix("ko")
 
         // 按自然断句拆分：中文按空格/换行，英文按句号等已有标点之后的位置
+        // (Split by natural sentence boundaries: CJK by spaces/newlines, English by existing punctuation positions)
         let segments = splitIntoSegments(trimmed, isCJK: isCJK)
         let processed = segments.map { addPunctuation($0, isCJK: isCJK, language: language) }
 
@@ -24,8 +25,8 @@ struct PunctuationProcessor {
 
     private static func splitIntoSegments(_ text: String, isCJK: Bool) -> [String] {
         if isCJK {
-            // 中日韩：语音识别通常用空格分隔句子
-            // 先按已有标点断句，再按空格断句
+            // 中日韩：语音识别通常用空格分隔句子（CJK: speech recognition usually separates sentences with spaces）
+            // 先按已有标点断句，再按空格断句（Split by existing punctuation first, then by spaces）
             var segments: [String] = []
             var current = ""
 
@@ -37,13 +38,13 @@ struct PunctuationProcessor {
                 }
             }
             if !current.isEmpty {
-                // 没有标点结尾的部分，再按空格拆
+                // 没有标点结尾的部分，再按空格拆（Parts without punctuation endings, split by spaces）
                 let sub = current.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
                 segments.append(contentsOf: sub)
             }
             return segments.filter { !$0.isEmpty }
         } else {
-            // 英文：按已有句末标点拆，保留标点
+            // 英文：按已有句末标点拆，保留标点（English: split by existing sentence-ending punctuation, keep punctuation）
             var segments: [String] = []
             var current = ""
 
@@ -67,7 +68,7 @@ struct PunctuationProcessor {
         let trimmed = segment.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return segment }
 
-        // 已有句末标点则不处理
+        // 已有句末标点则不处理（Skip if sentence-ending punctuation already exists）
         if let last = trimmed.last, isSentenceEndingPunctuation(last) {
             return trimmed
         }
@@ -82,10 +83,10 @@ struct PunctuationProcessor {
     // MARK: - 中日韩标点检测
 
     private static func detectCJKPunctuation(_ text: String, language: String) -> String {
-        // 取最后几个字符分析语气
+        // 取最后几个字符分析语气（Take the last few characters to analyze tone）
         let suffix = String(text.suffix(6))
 
-        // --- 疑问 ---
+        // --- 疑问 ---（Question ---）
         let zhQuestionEndings = ["吗", "呢", "吧", "么", "嘛", "啥", "谁",
                                   "哪", "几", "多少", "什么", "怎么", "怎样",
                                   "为什么", "为啥", "是不是", "对不对",
@@ -107,7 +108,7 @@ struct PunctuationProcessor {
             }
         }
 
-        // 检查是否包含疑问代词（即使不在句尾）
+        // 检查是否包含疑问代词，即使不在句尾（Check for interrogative pronouns, even if not at sentence end）
         let zhQuestionWords = ["什么", "怎么", "为什么", "哪里", "哪个", "几个", "多少", "谁的", "如何"]
         if language.hasPrefix("zh") {
             for word in zhQuestionWords {
@@ -117,7 +118,7 @@ struct PunctuationProcessor {
             }
         }
 
-        // --- 感叹 ---
+        // --- 感叹 ---（Exclamation ---）
         let zhExclamationEndings = ["啊", "呀", "哇", "哦", "嘞", "喽", "啦",
                                      "太好了", "真棒", "太棒了", "厉害", "不错",
                                      "天哪", "我去", "卧槽", "牛逼", "绝了", "好耶"]
@@ -137,7 +138,7 @@ struct PunctuationProcessor {
             }
         }
 
-        // --- 列举/未完 ---
+        // --- 列举/未完 ---（Enumeration/incomplete ---）
         let continuationEndings = ["等等", "之类的", "什么的", "等"]
         if language.hasPrefix("zh") {
             for pattern in continuationEndings {
@@ -147,7 +148,7 @@ struct PunctuationProcessor {
             }
         }
 
-        // 默认：句号
+        // 默认：句号（Default: period）
         if language.hasPrefix("zh") { return "。" }
         if language.hasPrefix("ja") { return "。" }
         if language.hasPrefix("ko") { return "." }
@@ -161,7 +162,7 @@ struct PunctuationProcessor {
         let words = lower.components(separatedBy: .whitespaces)
         let firstWord = words.first ?? ""
 
-        // 疑问句特征词
+        // 疑问句特征词（Question sentence feature words）
         let questionStarters: [String]
         let tagQuestions: [String]
         let exclamationStarters: [String]
@@ -169,7 +170,7 @@ struct PunctuationProcessor {
 
         switch language {
         case let l where l.hasPrefix("es"):
-            // 西班牙语
+            // 西班牙语（Spanish）
             questionStarters = ["qué", "dónde", "cómo", "cuándo", "por", "quién",
                                 "cuál", "cuánto", "cuánta", "cuántos", "cuántas",
                                 "verdad", "no", "es", "son", "está", "están",
@@ -181,7 +182,7 @@ struct PunctuationProcessor {
             exclamationEnders = ["increíble", "fantástico", "magnífico", "genial",
                                  "maravilloso", "excelente", "perfecto", "por fin"]
         case let l where l.hasPrefix("fr"):
-            // 法语
+            // 法语（French）
             questionStarters = ["où", "quand", "comment", "pourquoi", "qui", "quel",
                                 "quelle", "quels", "quelles", "combien", "est-ce",
                                 "est", "sont", "peut", "peuvent", "doit", "doivent",
@@ -192,7 +193,7 @@ struct PunctuationProcessor {
             exclamationEnders = ["incroyable", "fantastique", "magnifique", "génial",
                                  "merveilleux", "excellent", "parfait", "enfin"]
         case let l where l.hasPrefix("de"):
-            // 德语
+            // 德语（German）
             questionStarters = ["wo", "wie", "warum", "wann", "wer", "welcher",
                                 "welche", "welches", "was", "kann", "kannst", "können",
                                 "ist", "sind", "war", "wird", "werden", "hat", "haben",
@@ -203,7 +204,7 @@ struct PunctuationProcessor {
             exclamationEnders = ["unglaublich", "fantastisch", "großartig", "wunderbar",
                                  "ausgezeichnet", "perfekt", "endlich", "super"]
         default:
-            // 英语（默认）
+            // 英语（默认）（English (default)）
             questionStarters = ["what", "where", "when", "who", "whom", "whose",
                                 "which", "why", "how", "is", "are", "was", "were",
                                 "do", "does", "did", "can", "could", "will", "would",
@@ -219,7 +220,7 @@ struct PunctuationProcessor {
                                  "finally", "at last"]
         }
 
-        // 疑问句检测
+        // 疑问句检测（Question sentence detection）
         if questionStarters.contains(firstWord) {
             return "?"
         }
@@ -227,7 +228,7 @@ struct PunctuationProcessor {
             if lower.hasSuffix(tag) { return "?" }
         }
 
-        // 感叹句检测
+        // 感叹句检测（Exclamation sentence detection）
         for starter in exclamationStarters {
             if lower.hasPrefix(starter) { return "!" }
         }
@@ -240,7 +241,7 @@ struct PunctuationProcessor {
 
     // MARK: - 辅助
 
-    /// 检查文本末尾是否有句末标点
+    /// 检查文本末尾是否有句末标点（Check if text ends with sentence-ending punctuation）
     static func hasTrailingPunctuation(_ text: String) -> Bool {
         guard let last = text.trimmingCharacters(in: .whitespacesAndNewlines).last else {
             return false
@@ -250,10 +251,10 @@ struct PunctuationProcessor {
 
     static func isSentenceEndingPunctuation(_ char: Character) -> Bool {
         let endings: Set<Character> = [
-            ".", "!", "?",          // 英文
-            "。", "！", "？",       // 中文全角
-            "…", "⋯",              // 省略号
-            "~", "～",              // 波浪号
+            ".", "!", "?",          // 英文（English）
+            "。", "！", "？",       // 中文全角（Chinese full-width）
+            "…", "⋯",              // 省略号（Ellipsis）
+            "~", "～",              // 波浪号（Tilde）
         ]
         return endings.contains(char)
     }

@@ -50,11 +50,11 @@ final class VolumeController {
                 let t = progress
                 let eased: Double
                 if isDecreasing {
-                    // 降音量：easeOutCubic — 快速下降，缓停
+                    // 降音量：easeOutCubic — 快速下降，缓停（Decrease volume: easeOutCubic — fast drop, gentle stop）
                     let inv = 1.0 - t
                     eased = 1.0 - inv * inv * inv
                 } else {
-                    // 升音量：easeInOutCubic — 平滑恢复
+                    // 升音量：easeInOutCubic — 平滑恢复（Increase volume: easeInOutCubic — smooth recovery）
                     if t < 0.5 {
                         eased = 4 * t * t * t
                     } else {

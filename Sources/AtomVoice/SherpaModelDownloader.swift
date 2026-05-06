@@ -3,22 +3,22 @@ import os.log
 
 private let logger = Logger(subsystem: "com.blacksquarre.AtomVoice", category: "SherpaDownloader")
 
-/// Sherpa 模型下载管理器
-/// 三个组件：Runtime dylib、ASR 模型、标点模型
-/// 下载 → 解压 → 清理临时文件
+/// Sherpa 模型下载管理器（Sherpa Model Download Manager）
+/// 三个组件：Runtime dylib、ASR 模型、标点模型（Three components: Runtime dylib, ASR model, punctuation model）
+/// 下载 → 解压 → 清理临时文件（Download → Extract → Clean up temp files）
 final class SherpaModelDownloader: NSObject, URLSessionDownloadDelegate {
     private static let runtimeArchiveRootName = "sherpa-onnx-v1.13.0-osx-universal2-shared-no-tts-lib"
 
     struct DownloadItem {
         let name: String
         let url: URL
-        let extractDir: URL   // 解压目标目录（父目录）
+        let extractDir: URL   // 解压目标目录（父目录）（Extract target directory (parent)）
         let archiveName: String
     }
 
     static let shared = SherpaModelDownloader()
 
-    /// 三个下载任务
+    /// 三个下载任务（Three download tasks）
     static let items: [DownloadItem] = [
         DownloadItem(
             name: "runtime",
@@ -40,12 +40,12 @@ final class SherpaModelDownloader: NSObject, URLSessionDownloadDelegate {
         ),
     ]
 
-    /// 下载进度回调（主线程）
+    /// 下载进度回调（主线程）（Download progress callback (main thread)）
     /// - Parameters:
-    ///   - currentItem: 当前第几个（1-based）
-    ///   - totalItems: 总数
-    ///   - itemProgress: 当前文件进度 0.0~1.0
-    ///   - message: 状态文字
+    ///   - currentItem: 当前第几个（1-based）（Current item number (1-based)）
+    ///   - totalItems: 总数（Total count）
+    ///   - itemProgress: 当前文件进度 0.0~1.0（Current file progress 0.0~1.0）
+    ///   - message: 状态文字（Status message）
     var onProgress: ((Int, Int, Double, String) -> Void)?
     var onComplete: ((Bool, String?) -> Void)?
 
@@ -56,7 +56,7 @@ final class SherpaModelDownloader: NSObject, URLSessionDownloadDelegate {
     private var totalItems = 0
     private(set) var isDownloading = false
 
-    /// Sherpa 运行所需文件清单
+    /// Sherpa 运行所需文件清单（Sherpa runtime required file list）
     static var requiredFiles: [(name: String, url: URL)] {
         let rt = SherpaOnnxRecognizerController.runtimeLibDirectory
         let asr = SherpaOnnxRecognizerController.modelDirectory
@@ -108,7 +108,7 @@ final class SherpaModelDownloader: NSObject, URLSessionDownloadDelegate {
         return allModelsReady
     }
 
-    /// 是否所有模型都已存在。只在下载完成、启动自愈或错误恢复时调用。
+    /// 是否所有模型都已存在。只在下载完成、启动自愈或错误恢复时调用。（Whether all models are present. Only called after download completion, startup self-repair, or error recovery.）
     static var allModelsReady: Bool {
         missingRequiredFiles.isEmpty
     }
@@ -126,12 +126,12 @@ final class SherpaModelDownloader: NSObject, URLSessionDownloadDelegate {
         }
     }
 
-    /// 开始下载所有缺失的模型
+    /// 开始下载所有缺失的模型（Start downloading all missing models）
     func startDownload() {
         guard !isDownloading else { return }
         isDownloading = true
 
-        // 创建目录
+        // 创建目录（Create directories）
         try? SherpaOnnxRecognizerController.createSupportDirectories()
 
         itemsToDownload = Self.items
@@ -140,13 +140,13 @@ final class SherpaModelDownloader: NSObject, URLSessionDownloadDelegate {
 
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30
-        config.timeoutIntervalForResource = 600  // 10 分钟总超时
+        config.timeoutIntervalForResource = 600  // 10 分钟总超时（10-minute total timeout）
         session = URLSession(configuration: config, delegate: self, delegateQueue: .main)
 
         downloadNext()
     }
 
-    /// 取消下载
+    /// 取消下载（Cancel download）
     func cancel() {
         currentTask?.cancel()
         session?.invalidateAndCancel()
@@ -158,7 +158,7 @@ final class SherpaModelDownloader: NSObject, URLSessionDownloadDelegate {
 
     private func downloadNext() {
         guard currentItemIndex < itemsToDownload.count else {
-            // 全部完成，验证文件确实存在
+            // 全部完成，验证文件确实存在（All done, verify files actually exist）
             isDownloading = false
             session?.finishTasksAndInvalidate()
             session = nil
@@ -210,7 +210,7 @@ final class SherpaModelDownloader: NSObject, URLSessionDownloadDelegate {
         try? FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
         let archiveURL = tmpDir.appendingPathComponent(item.archiveName)
 
-        // 移动下载文件
+        // 移动下载文件（Move downloaded file）
         do {
             if FileManager.default.fileExists(atPath: archiveURL.path) {
                 try FileManager.default.removeItem(at: archiveURL)
@@ -222,7 +222,7 @@ final class SherpaModelDownloader: NSObject, URLSessionDownloadDelegate {
             return
         }
 
-        // 解压
+        // 解压（Extract）
         DispatchQueue.main.async { [weak self] in
             self?.onProgress?(num, self?.totalItems ?? 0, 1.0, loc("sherpa.extracting", num, self?.totalItems ?? 0))
         }
@@ -231,7 +231,7 @@ final class SherpaModelDownloader: NSObject, URLSessionDownloadDelegate {
             guard let self else { return }
             let extractSuccess = self.extractArchive(at: archiveURL, to: item.extractDir)
 
-            // 清理压缩包
+            // 清理压缩包（Clean up archive）
             try? FileManager.default.removeItem(at: archiveURL)
 
             DispatchQueue.main.async { [weak self] in
@@ -264,7 +264,7 @@ final class SherpaModelDownloader: NSObject, URLSessionDownloadDelegate {
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         if let error = error as NSError? {
-            if error.code == NSURLErrorCancelled { return }  // 主动取消
+            if error.code == NSURLErrorCancelled { return }  // 主动取消（User-initiated cancel）
             logger.error("[下载] 下载失败: \(error.localizedDescription, privacy: .public)")
             finishWithError("下载失败: \(error.localizedDescription)")
         }

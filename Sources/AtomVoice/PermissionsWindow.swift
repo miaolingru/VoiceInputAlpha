@@ -6,13 +6,13 @@ import ApplicationServices
 // MARK: - Dynamic Colors (macOS 26 adaptive)
 
 private extension NSColor {
-    /// 权限卡片背景：浅色模式接近白色，深色模式略亮于窗口背景
+    /// 权限卡片背景：浅色模式接近白色，深色模式略亮于窗口背景（Permission card background: near-white in light mode, slightly brighter than window background in dark mode）
     static let permissionCard = NSColor(name: nil) { appearance in
         appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
             ? NSColor(white: 0.22, alpha: 1)
             : NSColor(white: 0.97, alpha: 1)
     }
-    /// 数字徽标底色
+    /// 数字徽标底色（Badge fill color）
     static let badgeFill = NSColor(name: nil) { appearance in
         appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
             ? NSColor(white: 0.38, alpha: 1)
@@ -71,13 +71,13 @@ final class PermissionsWindowController: NSObject {
 
         guard let cv = w.contentView else { return }
 
-        // 左侧面板：NSVisualEffectView 自动适配深浅色
+        // 左侧面板：NSVisualEffectView 自动适配深浅色（Left panel: NSVisualEffectView auto-adapts to light/dark mode）
         let leftPanel = makeLeftPanel()
-        // 垂直分割线
+        // 垂直分割线（Vertical separator line）
         let vLine = NSBox()
         vLine.boxType = .separator
         vLine.translatesAutoresizingMaskIntoConstraints = false
-        // 右侧面板
+        // 右侧面板（Right panel）
         let rightPanel = makeRightPanel()
 
         leftPanel.translatesAutoresizingMaskIntoConstraints = false
@@ -113,7 +113,7 @@ final class PermissionsWindowController: NSObject {
     // MARK: - Left Guide Panel
 
     private func makeLeftPanel() -> NSView {
-        // NSVisualEffectView 自动跟随系统外观，提供 sidebar 质感
+        // NSVisualEffectView 自动跟随系统外观，提供 sidebar 质感（NSVisualEffectView auto-follows system appearance, provides sidebar texture）
         let panel = NSVisualEffectView()
         panel.material = .sidebar
         panel.blendingMode = .behindWindow
@@ -132,7 +132,7 @@ final class PermissionsWindowController: NSObject {
             vStack.trailingAnchor.constraint(equalTo: panel.trailingAnchor, constant: -20),
         ])
 
-        // App 图标
+        // App 图标（App icon）
         let iconView = NSImageView()
         iconView.image = NSApp.applicationIconImage
         iconView.imageScaling = .scaleProportionallyDown
@@ -171,7 +171,7 @@ final class PermissionsWindowController: NSObject {
         row.spacing = 10
         row.alignment = .top
 
-        // 圆形数字徽标
+        // 圆形数字徽标（Circular number badge）
         let badge = CircleBadgeView(number: number)
         badge.translatesAutoresizingMaskIntoConstraints = false
         badge.widthAnchor.constraint(equalToConstant: 22).isActive = true
@@ -231,14 +231,14 @@ final class PermissionsWindowController: NSObject {
             vStack.setCustomSpacing(i < permissions.count - 1 ? 10 : 22, after: row)
         }
 
-        // 分割线
+        // 分割线（Separator line）
         let sep = NSBox()
         sep.boxType = .separator
         vStack.addArrangedSubview(sep)
         sep.widthAnchor.constraint(equalTo: vStack.widthAnchor).isActive = true
         vStack.setCustomSpacing(14, after: sep)
 
-        // 故障排除
+        // 故障排除（Troubleshooting）
         let troubleLabel = NSTextField(labelWithString: loc("permissions.troubleshoot"))
         troubleLabel.font = .systemFont(ofSize: 12, weight: .semibold)
         troubleLabel.textColor = .tertiaryLabelColor
@@ -251,7 +251,7 @@ final class PermissionsWindowController: NSObject {
         vStack.addArrangedSubview(resetBtn)
         vStack.setCustomSpacing(22, after: resetBtn)
 
-        // 关闭按钮（右对齐）
+        // 关闭按钮（右对齐）（Close button, right-aligned）
         let closeRow = NSStackView()
         closeRow.orientation = .horizontal
         let spacer = NSView()
@@ -408,7 +408,7 @@ final class PermissionRowView: NSView {
     private let titleLabel: NSTextField
     private let descLabel: NSTextField
     private let actionBtn: NSButton
-    // 状态圆点：直接用 NSView + layer 绘制
+    // 状态圆点：直接用 NSView + layer 绘制（Status dot: drawn with NSView + layer）
     private let statusDot = NSView()
     private let statusLabel = NSTextField(labelWithString: "")
     private var currentDotColor: NSColor = .systemGray
@@ -423,7 +423,7 @@ final class PermissionRowView: NSView {
     }
     required init?(coder: NSCoder) { fatalError() }
 
-    // 卡片背景跟随系统外观
+    // 卡片背景跟随系统外观（Card background follows system appearance）
     override var wantsUpdateLayer: Bool { true }
     override func updateLayer() {
         effectiveAppearance.performAsCurrentDrawingAppearance {
@@ -433,13 +433,13 @@ final class PermissionRowView: NSView {
     override func viewDidChangeEffectiveAppearance() {
         super.viewDidChangeEffectiveAppearance()
         needsDisplay = true
-        // 圆点颜色也需要刷新（已是 CGColor，需重设）
+        // 圆点颜色也需要刷新（已是 CGColor，需重设）（Dot color also needs refresh — already CGColor, needs reassignment）
         statusDot.layer?.backgroundColor = currentDotColor.cgColor
     }
 
     private func setup() {
         wantsLayer = true
-        layer?.cornerRadius = 12          // macOS 26 更大圆角
+        layer?.cornerRadius = 12          // macOS 26 更大圆角（macOS 26 larger corner radius）
         layer?.cornerCurve = .continuous
 
         titleLabel.font = .systemFont(ofSize: 13, weight: .semibold)
@@ -455,7 +455,7 @@ final class PermissionRowView: NSView {
         actionBtn.bezelStyle = .rounded
         actionBtn.translatesAutoresizingMaskIntoConstraints = false
 
-        // 状态圆点（12pt 实心圆）
+        // 状态圆点（12pt 实心圆）（Status dot: 12pt solid circle）
         statusDot.wantsLayer = true
         statusDot.layer?.cornerRadius = 6
         statusDot.layer?.cornerCurve = .circular
@@ -470,10 +470,10 @@ final class PermissionRowView: NSView {
         addSubview(statusDot)
         addSubview(statusLabel)
 
-        // 布局：
-        //   Title                          (顶部左侧)
-        //   Description (全宽，自动折行)
-        //   [Button — 占满左侧]   [● 状态文字]  (底部行)
+        // 布局：（Layout:）
+        //   Title                          （顶部左侧 / top-left）
+        //   Description（全宽，自动折行 / full width, auto-wraps）
+        //   [Button — 占满左侧]   [● 状态文字]  （底部行 / bottom row）
         NSLayoutConstraint.activate([
             titleLabel.topAnchor.constraint(equalTo: topAnchor, constant: 14),
             titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
@@ -483,17 +483,17 @@ final class PermissionRowView: NSView {
             descLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             descLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
 
-            // 状态文字固定在右边缘
+            // 状态文字固定在右边缘（Status text pinned to right edge）
             statusLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
             statusLabel.centerYAnchor.constraint(equalTo: actionBtn.centerYAnchor),
 
-            // 圆点紧贴状态文字左侧
+            // 圆点紧贴状态文字左侧（Dot positioned just left of status text）
             statusDot.widthAnchor.constraint(equalToConstant: 12),
             statusDot.heightAnchor.constraint(equalToConstant: 12),
             statusDot.centerYAnchor.constraint(equalTo: actionBtn.centerYAnchor),
             statusDot.trailingAnchor.constraint(equalTo: statusLabel.leadingAnchor, constant: -6),
 
-            // 按钮从左边延伸到圆点左侧
+            // 按钮从左边延伸到圆点左侧（Button extends from left to left side of dot）
             actionBtn.topAnchor.constraint(equalTo: descLabel.bottomAnchor, constant: 12),
             actionBtn.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             actionBtn.trailingAnchor.constraint(equalTo: statusDot.leadingAnchor, constant: -16),

@@ -42,7 +42,7 @@ final class MenuBarController {
     private func rebuildMenu() {
         let menu = NSMenu()
 
-        // 顶部提示：按住/单击 [触发键] 开始语音输入
+        // 顶部提示：按住/单击 [触发键] 开始语音输入（Top tip: hold/tap [trigger key] to start voice input）
         let savedKeyCode = UInt16(UserDefaults.standard.integer(forKey: "triggerKeyCode"))
         let triggerOption = TriggerKeyOption.option(for: savedKeyCode == 0 ? 63 : savedKeyCode)
         let isTapMode = UserDefaults.standard.bool(forKey: "silenceAutoStopEnabled")
@@ -56,7 +56,7 @@ final class MenuBarController {
 
         menu.addItem(.separator())
 
-        // 识别语言
+        // 识别语言（Recognition language）
         let langItem = NSMenuItem(title: loc("menu.language"), action: nil, keyEquivalent: "")
         langItem.image = icon("globe")
         let langMenu = NSMenu()
@@ -71,7 +71,7 @@ final class MenuBarController {
         langItem.submenu = langMenu
         menu.addItem(langItem)
 
-        // 识别引擎
+        // 识别引擎（Recognition engine）
         let engineItem = NSMenuItem(title: loc("menu.recognitionEngine"), action: nil, keyEquivalent: "")
         engineItem.image = icon("cpu")
         let engineMenu = NSMenu()
@@ -90,7 +90,7 @@ final class MenuBarController {
         }
         engineMenu.addItem(.separator())
 
-        // Apple 本地识别（设备端处理）
+        // Apple 本地识别（设备端处理）（Apple on-device recognition (local processing)）
         let onDeviceSupported = Self.supportsOnDeviceRecognition(for: currentLang)
         let onDeviceEnabled = UserDefaults.standard.bool(forKey: "appleOnDeviceRecognitionEnabled") && onDeviceSupported
         let onDeviceItem = NSMenuItem(
@@ -118,7 +118,7 @@ final class MenuBarController {
         engineItem.submenu = engineMenu
         menu.addItem(engineItem)
 
-        // 自动标点
+        // 自动标点（Auto punctuation）
         let punctEnabled = UserDefaults.standard.bool(forKey: "autoPunctuationEnabled")
         let punctItem = NSMenuItem(title: loc("menu.punctuation"), action: #selector(togglePunctuation(_:)), keyEquivalent: "")
         punctItem.image = icon("text.badge.plus")
@@ -127,7 +127,7 @@ final class MenuBarController {
         punctItem.toolTip = loc("tooltip.menu.punctuation")
         menu.addItem(punctItem)
 
-        // LLM 优化
+        // LLM 优化（LLM refinement）
         let llmItem = NSMenuItem(title: loc("menu.llm"), action: nil, keyEquivalent: "")
         llmItem.image = icon("wand.and.stars")
         llmItem.toolTip = loc("tooltip.menu.llm")
@@ -155,7 +155,7 @@ final class MenuBarController {
 
         menu.addItem(.separator())
 
-        // 输入方式: 单击说话 or 长按说话
+        // 输入方式: 单击说话 or 长按说话（Input mode: tap to speak or hold to speak）
         let inputModeItem = NSMenuItem(title: loc("menu.inputMode"), action: nil, keyEquivalent: "")
         inputModeItem.image = icon("waveform")
         inputModeItem.toolTip = loc("tooltip.menu.inputMode")
@@ -193,7 +193,7 @@ final class MenuBarController {
         inputModeItem.submenu = inputModeMenu
         menu.addItem(inputModeItem)
 
-        // 触发按键
+        // 触发按键（Trigger key）
         let triggerItem = NSMenuItem(title: loc("menu.triggerKey"), action: nil, keyEquivalent: "")
         triggerItem.image = icon("command")
         triggerItem.toolTip = loc("tooltip.menu.triggerKey")
@@ -208,7 +208,7 @@ final class MenuBarController {
         triggerItem.submenu = triggerMenu
         menu.addItem(triggerItem)
 
-        // 音频输入设备
+        // 音频输入设备（Audio input device）
         let audioInputItem = NSMenuItem(title: loc("menu.audioInput"), action: nil, keyEquivalent: "")
         audioInputItem.image = icon("mic.badge.plus")
         audioInputItem.toolTip = loc("tooltip.menu.audioInput")
@@ -232,7 +232,7 @@ final class MenuBarController {
 
         menu.addItem(.separator())
 
-        // 其他设置（子菜单：动画效果、开机启动、权限与帮助、检查更新、关于）
+        // 其他设置（子菜单：动画效果、开机启动、权限与帮助、检查更新、关于）（Other settings (submenu: animation, launch at login, permissions & help, check for updates, about)）
         let otherItem = NSMenuItem(title: loc("menu.otherSettings"), action: nil, keyEquivalent: "")
         otherItem.image = icon("ellipsis.circle")
         otherItem.submenu = buildOtherSettingsMenu()
@@ -257,7 +257,7 @@ final class MenuBarController {
     private func buildOtherSettingsMenu() -> NSMenu {
         let m = NSMenu()
 
-        // 动画效果
+        // 动画效果（Animation style）
         let animItem = NSMenuItem(title: loc("menu.animation"), action: nil, keyEquivalent: "")
         animItem.image = icon("sparkles")
         let animMenu = NSMenu()
@@ -292,7 +292,7 @@ final class MenuBarController {
 
         m.addItem(.separator())
 
-        // 录音时降低系统音量
+        // 录音时降低系统音量（Lower system volume during recording）
         let lowerVolumeItem = NSMenuItem(title: loc("menu.lowerVolumeOnRecording"),
                                            action: #selector(toggleLowerVolumeOnRecording(_:)),
                                            keyEquivalent: "")
@@ -302,7 +302,7 @@ final class MenuBarController {
         lowerVolumeItem.toolTip = loc("tooltip.menu.lowerVolumeOnRecording")
         m.addItem(lowerVolumeItem)
 
-        // 开机启动
+        // 开机启动（Launch at login）
         let launchAtLoginItem = NSMenuItem(title: loc("menu.launchAtLogin"),
                                             action: #selector(toggleLaunchAtLogin(_:)),
                                             keyEquivalent: "")
@@ -312,7 +312,7 @@ final class MenuBarController {
         launchAtLoginItem.toolTip = loc("tooltip.menu.launchAtLogin")
         m.addItem(launchAtLoginItem)
 
-        // 权限与帮助
+        // 权限与帮助（Permissions & help）
         let helpItem = NSMenuItem(title: loc("menu.help"),
                                    action: #selector(openPermissions(_:)),
                                    keyEquivalent: "")
@@ -321,7 +321,7 @@ final class MenuBarController {
         helpItem.toolTip = loc("tooltip.menu.help")
         m.addItem(helpItem)
 
-        // 隐私政策
+        // 隐私政策（Privacy policy）
         let privacyItem = NSMenuItem(title: loc("menu.privacyPolicy"),
                                      action: #selector(openPrivacyPolicy(_:)),
                                      keyEquivalent: "")
@@ -331,7 +331,7 @@ final class MenuBarController {
 
         m.addItem(.separator())
 
-        // 检查更新
+        // 检查更新（Check for updates）
         let updateItem = NSMenuItem(title: loc("menu.checkForUpdates"), action: #selector(checkForUpdates(_:)), keyEquivalent: "")
         updateItem.image = icon("arrow.down.circle")
         updateItem.target = self

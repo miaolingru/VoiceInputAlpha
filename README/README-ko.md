@@ -7,7 +7,7 @@
 <h3 align="center">누르고, 말하세요.</h3>
 <p align="center">가볍고 프라이버시 우선의 음성 받아쓰기. 텍스트가 어떤 Mac 앱에든 직접 입력되며, 녹음 시간 제한이 없습니다.</p>
 
-![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![Swift](https://img.shields.io/badge/Swift-5.9-orange) ![License](https://img.shields.io/badge/license-MIT-green)
+
 
 ---
 

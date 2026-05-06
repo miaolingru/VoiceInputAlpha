@@ -29,7 +29,7 @@ final class SherpaOnnxRecognizerController {
         }
     }
 
-    /// 释放模型上下文以响应系统内存压力，下次录音时会重新加载
+    /// 释放模型上下文以响应系统内存压力，下次录音时会重新加载（Release model context in response to system memory pressure, will reload on next recording）
     func releaseModels() {
         if let context {
             AtomVoiceSherpaDestroy(context)
@@ -75,7 +75,7 @@ final class SherpaOnnxRecognizerController {
     }
 
     func start(onResult: @escaping (String, Bool) -> Void) -> String? {
-        // 已有识别器上下文时直接复用，不重新加载模型
+        // 已有识别器上下文时直接复用，不重新加载模型（Reuse existing recognizer context, don't reload model）
         if context != nil {
             self.onResult = onResult
             lastText = ""
@@ -164,7 +164,7 @@ final class SherpaOnnxRecognizerController {
                 finalText = String(cString: cText)
                 AtomVoiceSherpaFreeString(cText)
             }
-            // 重置 stream 以备下次录音，但保留识别器上下文避免重复加载模型
+            // 重置 stream 以备下次录音，但保留识别器上下文避免重复加载模型（Reset stream for next recording, but keep recognizer context to avoid reloading model）
             if AtomVoiceSherpaResetStream(context) == 0 {
                 print("[SherpaOnnx] 重置 stream 失败，销毁上下文下次重建")
                 AtomVoiceSherpaDestroy(context)

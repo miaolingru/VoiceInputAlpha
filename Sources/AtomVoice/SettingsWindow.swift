@@ -68,7 +68,7 @@ final class ProviderEditorController: NSObject, NSTableViewDataSource, NSTableVi
         let cv = sheet.contentView!
         let p: CGFloat = 20
 
-        // 表格
+        // 表格（Table view）
         let scroll = NSScrollView()
         scroll.translatesAutoresizingMaskIntoConstraints = false
         scroll.hasVerticalScroller = true
@@ -94,7 +94,7 @@ final class ProviderEditorController: NSObject, NSTableViewDataSource, NSTableVi
         }
         scroll.documentView = tableView
 
-        // +/- 按钮
+        // +/- 按钮（+/- buttons）
         let addBtn = NSButton(title: "+", target: self, action: #selector(addRow))
         addBtn.toolTip = loc("tooltip.provider.add")
         addBtn.translatesAutoresizingMaskIntoConstraints = false
@@ -107,7 +107,7 @@ final class ProviderEditorController: NSObject, NSTableViewDataSource, NSTableVi
         delBtn.bezelStyle = .rounded
         cv.addSubview(delBtn)
 
-        // 编辑区
+        // 编辑区（Edit area）
         let sep = NSBox()
         sep.translatesAutoresizingMaskIntoConstraints = false
         sep.boxType = .separator
@@ -133,7 +133,7 @@ final class ProviderEditorController: NSObject, NSTableViewDataSource, NSTableVi
         grid.column(at: 0).xPlacement = .trailing
         grid.column(at: 0).width = 44
 
-        // 完成按钮
+        // 完成按钮（Done button）
         let doneBtn = NSButton(title: loc("provider.done"), target: self, action: #selector(done))
         doneBtn.translatesAutoresizingMaskIntoConstraints = false
         doneBtn.bezelStyle = .rounded
@@ -294,7 +294,7 @@ final class PromptEditorController: NSObject, NSTextViewDelegate {
         textView.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
         textView.autoresizingMask = [.width]
         textView.delegate = self
-        // Set up placeholder label
+        // 设置占位标签（Set up placeholder label）
         placeholderLabel = NSTextField(labelWithString: LLMRefiner.currentDefaultSystemPrompt)
         placeholderLabel.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
         placeholderLabel.textColor = .placeholderTextColor
@@ -304,7 +304,7 @@ final class PromptEditorController: NSObject, NSTextViewDelegate {
         placeholderLabel.drawsBackground = false
         placeholderLabel.isEditable = false
         placeholderLabel.isSelectable = false
-        // Add placeholder directly to text view
+        // 将占位标签直接添加到文本视图（Add placeholder directly to text view）
         textView.addSubview(placeholderLabel)
         
         NSLayoutConstraint.activate([
@@ -313,7 +313,7 @@ final class PromptEditorController: NSObject, NSTextViewDelegate {
             placeholderLabel.trailingAnchor.constraint(equalTo: textView.trailingAnchor, constant: -4)
         ])
 
-        // Load custom prompt
+        // 加载自定义提示词（Load custom prompt）
         if let custom = UserDefaults.standard.string(forKey: "llmSystemPrompt"), !custom.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             textView.string = custom
         }
@@ -434,7 +434,7 @@ final class SettingsWindowController: NSObject {
         let labelW: CGFloat = 120
         let gap: CGFloat = 8
 
-        // ── 控件 ─────────────────────────────────────────────
+        // ── 控件 ─────────────────────────────────────────────（Controls）
         providers = ProviderStore.load()
         providerPopup = NSPopUpButton()
         providerPopup.target = self
@@ -473,7 +473,7 @@ final class SettingsWindowController: NSObject {
         saveBtn.keyEquivalent   = "\r"
         cancelBtn.keyEquivalent = "\u{1b}"
 
-        // ── 说明文字 ──────────────────────────────────────────────
+        // ── 说明文字 ──────────────────────────────────────────────（Description text）
         let descLabel = NSTextField(labelWithString: loc("settings.llm.desc"))
         descLabel.font = .systemFont(ofSize: 12)
         descLabel.textColor = .secondaryLabelColor
@@ -481,7 +481,7 @@ final class SettingsWindowController: NSObject {
         descLabel.maximumNumberOfLines = 0
         descLabel.translatesAutoresizingMaskIntoConstraints = false
 
-        // ── 辅助：构造单行 HStack（左侧固定宽度标签 + 右侧控件） ─
+        // ── 辅助：构造单行 HStack（左侧固定宽度标签 + 右侧控件） ─（Helper: build single-row HStack with fixed-width label + control）
         func makeRow(labelText: String, control: NSView) -> NSView {
             let label = NSTextField(labelWithString: labelText)
             label.font = .systemFont(ofSize: 13)
@@ -498,19 +498,19 @@ final class SettingsWindowController: NSObject {
             return row
         }
 
-        // 服务商行：popup 自动拉伸，管理按钮紧跟其后
+        // 服务商行：popup 自动拉伸，管理按钮紧跟其后（Provider row: popup auto-stretches, manage button follows）
         let providerCtrl = NSStackView(views: [providerPopup, manageBtn])
         providerCtrl.orientation = .horizontal
         providerCtrl.spacing = gap
         providerCtrl.alignment = .centerY
 
-        // 延迟行：popup 固定宽，不拉伸
+        // 延迟行：popup 固定宽，不拉伸（Delay row: popup fixed width, no stretch）
         let delayWrap = NSStackView(views: [delayPopup])
         delayWrap.orientation = .horizontal
         delayWrap.alignment = .centerY
         delayPopup.widthAnchor.constraint(equalToConstant: 110).isActive = true
 
-        // ── 表单垂直 StackView ────────────────────────────────
+        // ── 表单垂直 StackView ────────────────────────────────（Form vertical StackView）
         let form = NSStackView()
         form.orientation = .vertical
         form.spacing = 10
@@ -530,22 +530,22 @@ final class SettingsWindowController: NSObject {
             form.addArrangedSubview(row)
         }
 
-        // 分割线
+        // 分割线（Separator line）
         let sep = NSBox()
         sep.boxType = .separator
         sep.translatesAutoresizingMaskIntoConstraints = false
 
-        // 底部：状态标签（左）+ 按钮组（右）
+        // 底部：状态标签（左）+ 按钮组（右）（Bottom: status label (left) + button group (right)）
         let bottomRow = NSStackView(views: [statusLabel, testBtn, cancelBtn, saveBtn])
         bottomRow.orientation = .horizontal
         bottomRow.spacing = gap
         bottomRow.alignment = .centerY
-        // 让 statusLabel 撑开左侧空间，按钮靠右
+        // 让 statusLabel 撑开左侧空间，按钮靠右（Let statusLabel fill left space, buttons align right）
         bottomRow.setCustomSpacing(0, after: statusLabel)
         statusLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
         statusLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        // ── 整体 ─────────────────────────────────────────────
+        // ── 整体 ─────────────────────────────────────────────（Overall layout）
         let root = NSView()
         root.translatesAutoresizingMaskIntoConstraints = false
         cv.addSubview(root)
@@ -556,38 +556,38 @@ final class SettingsWindowController: NSObject {
         }
 
         NSLayoutConstraint.activate([
-            // root 贴满 contentView（带 padding）
+            // root 贴满 contentView（带 padding）（Root fills contentView with padding）
             root.topAnchor.constraint(equalTo: cv.topAnchor, constant: pad),
             root.leadingAnchor.constraint(equalTo: cv.leadingAnchor, constant: pad),
             root.trailingAnchor.constraint(equalTo: cv.trailingAnchor, constant: -pad),
             root.bottomAnchor.constraint(equalTo: cv.bottomAnchor, constant: -pad),
 
-            // 说明文字
+            // 说明文字（Description text）
             descLabel.topAnchor.constraint(equalTo: root.topAnchor),
             descLabel.leadingAnchor.constraint(equalTo: root.leadingAnchor),
             descLabel.trailingAnchor.constraint(equalTo: root.trailingAnchor),
 
-            // 表单在说明文字下方
+            // 表单在说明文字下方（Form below description text）
             form.topAnchor.constraint(equalTo: descLabel.bottomAnchor, constant: 12),
             form.leadingAnchor.constraint(equalTo: root.leadingAnchor),
             form.trailingAnchor.constraint(equalTo: root.trailingAnchor),
 
-            // 各行控件拉满 form 宽度（label 固定 + 控件填充剩余）
-            // → 由 makeRow 内的 NSStackView 自动处理
+            // 各行控件拉满 form 宽度（label 固定 + 控件填充剩余）（Each row fills form width: label fixed + control fills remaining）
+            // → 由 makeRow 内的 NSStackView 自动处理（Handled automatically by NSStackView in makeRow）
 
-            // 分割线
+            // 分割线（Separator line）
             sep.topAnchor.constraint(equalTo: form.bottomAnchor, constant: 16),
             sep.leadingAnchor.constraint(equalTo: root.leadingAnchor),
             sep.trailingAnchor.constraint(equalTo: root.trailingAnchor),
 
-            // 底部行
+            // 底部行（Bottom row）
             bottomRow.topAnchor.constraint(equalTo: sep.bottomAnchor, constant: 16),
             bottomRow.leadingAnchor.constraint(equalTo: root.leadingAnchor),
             bottomRow.trailingAnchor.constraint(equalTo: root.trailingAnchor),
             bottomRow.bottomAnchor.constraint(equalTo: root.bottomAnchor),
         ])
 
-        // 让 form 内每行右侧控件自动拉满
+        // 让 form 内每行右侧控件自动拉满（Let right-side controls in each form row auto-fill width）
         for sub in form.arrangedSubviews {
             sub.trailingAnchor.constraint(equalTo: form.trailingAnchor).isActive = true
         }
@@ -648,7 +648,7 @@ final class SettingsWindowController: NSObject {
         apiKeyField?.stringValue     = UserDefaults.standard.string(forKey: "llmAPIKey") ?? ""
         modelField?.stringValue      = UserDefaults.standard.string(forKey: "llmModel") ?? "gpt-4o-mini"
         let delay = UserDefaults.standard.double(forKey: "llmResultDelay")
-        // 选中最近的选项
+        // 选中最近的选项（Select closest option）
         let closestIdx = delayOptions.enumerated().min(by: { abs($0.element - delay) < abs($1.element - delay) })?.offset ?? 1
         delayPopup?.selectItem(at: closestIdx)
         statusLabel?.stringValue     = ""
@@ -731,7 +731,7 @@ extension SettingsWindowController: NSWindowDelegate {
 }
 
 extension SettingsWindowController: NSTextFieldDelegate {
-    // Enter 键跳到下一个输入框，而不是插入换行
+    // Enter 键跳到下一个输入框，而不是插入换行（Enter key jumps to next field instead of inserting newline）
     func control(_ control: NSControl, textView: NSTextView, doCommandBy selector: Selector) -> Bool {
         if selector == #selector(NSResponder.insertNewline(_:)) {
             control.window?.selectNextKeyView(nil)

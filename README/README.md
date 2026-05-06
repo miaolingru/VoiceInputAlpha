@@ -6,7 +6,7 @@
 
 A lightweight macOS menu bar voice input app. Hold **Fn** to record, release to inject transcribed text into any focused input field.
 
-![macOS 13+](https://img.shields.io/badge/macOS-13%2B-blue) ![Swift](https://img.shields.io/badge/Swift-5.9-orange) ![License](https://img.shields.io/badge/license-MIT-green)
+
 
 ---
 

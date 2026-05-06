@@ -11,27 +11,27 @@ final class AudioEngineController {
     private var audioBufferHandler: ((AVAudioPCMBuffer, AVAudioTime) -> Void)?
     private var tapInstalled = false
 
-    // 静音自动停止
+    // 静音自动停止（Silence auto-stop）
     var onSilenceTimeout: (() -> Void)?
     private var silenceDuration: Double = 0
     private var recordingDuration: Double = 0
-    private let silenceGuardPeriod: Double = 0.5  // 录音前 0.5 秒不检测静音
+    private let silenceGuardPeriod: Double = 0.5  // 录音前 0.5 秒不检测静音（Skip silence detection for the first 0.5s）
 
     // FFT
     private let fftSize = 1024
     private var fftSetup: FFTSetup?
     private var hannWindow: [Float] = []
     private var sampleBuffer: [Float] = []
-    private let bufferQueue = DispatchQueue(label: "com.atomvoice.audioBuffer")  // 保护 sampleBuffer 和静音检测状态
+    private let bufferQueue = DispatchQueue(label: "com.atomvoice.audioBuffer")  // 保护 sampleBuffer 和静音检测状态（Protect sampleBuffer and silence detection state）
 
-    // 只用人声核心频率范围驱动视觉，避免低频震动/高频噪声把波形整体推起来。
-    // 频谱只判断人声存在感，最终仍映射为 logo 式居中分布。
+    // 只用人声核心频率范围驱动视觉，避免低频震动/高频噪声把波形整体推起来。（Use only core voice frequency ranges for visuals, avoiding low-freq rumble/high-freq noise from inflating the waveform.）
+    // 频谱只判断人声存在感，最终仍映射为 logo 式居中分布。（Spectrum only determines voice presence; final mapping uses logo-style centered distribution.）
     private let bandFreqRanges: [(Float, Float)] = [
-        (100,  260),   // 第1根 — 男声低频轮廓
-        (260,  650),   // 第2根 — 低共振峰
-        (650,  1500),  // 第3根 — 元音主体
-        (1500, 2800),  // 第4根 — 清晰度与高共振峰
-        (2800, 4200),  // 第5根 — 辅音边缘，权重较低
+        (100,  260),   // 第1根 — 男声低频轮廓（Bar 1 — male low-freq contour）
+        (260,  650),   // 第2根 — 低共振峰（Bar 2 — low formant）
+        (650,  1500),  // 第3根 — 元音主体（Bar 3 — vowel core）
+        (1500, 2800),  // 第4根 — 清晰度与高共振峰（Bar 4 — clarity & high formant）
+        (2800, 4200),  // 第5根 — 辅音边缘，权重较低（Bar 5 — consonant edge, lower weight）
     ]
     private let visualBarProfile: [Float] = [0.40, 0.68, 1.0, 0.68, 0.40]
     private let voicePresenceWeights: [Float] = [0.25, 0.85, 1.0, 0.75, 0.20]
@@ -50,14 +50,14 @@ final class AudioEngineController {
 
     // MARK: - 输入设备管理
 
-    /// 音频输入设备信息
+    /// 音频输入设备信息（Audio input device info）
     struct AudioInputDevice {
         let id: AudioDeviceID
         let name: String
         let uid: String
     }
 
-    /// 列出所有可用的音频输入设备
+    /// 列出所有可用的音频输入设备（List all available audio input devices）
     static func availableInputDevices() -> [AudioInputDevice] {
         var propAddr = AudioObjectPropertyAddress(
             mSelector: kAudioHardwarePropertyDevices,
@@ -73,7 +73,7 @@ final class AudioEngineController {
 
         var result: [AudioInputDevice] = []
         for id in deviceIDs {
-            // 检查是否有输入通道
+            // 检查是否有输入通道（Check for input channels）
             var inputAddr = AudioObjectPropertyAddress(
                 mSelector: kAudioDevicePropertyStreamConfiguration,
                 mScope: kAudioDevicePropertyScopeInput,
@@ -96,7 +96,7 @@ final class AudioEngineController {
             }
             guard channelCount > 0 else { continue }
 
-            // 获取设备名称
+            // 获取设备名称（Get device name）
             var nameAddr = AudioObjectPropertyAddress(
                 mSelector: kAudioDevicePropertyDeviceNameCFString,
                 mScope: kAudioObjectPropertyScopeGlobal,
@@ -107,7 +107,7 @@ final class AudioEngineController {
             AudioObjectGetPropertyData(id, &nameAddr, 0, nil, &nameSize, &name)
             let deviceName = name?.takeUnretainedValue() as String? ?? "Unknown"
 
-            // 获取设备 UID
+            // 获取设备 UID（Get device UID）
             var uidAddr = AudioObjectPropertyAddress(
                 mSelector: kAudioDevicePropertyDeviceUID,
                 mScope: kAudioObjectPropertyScopeGlobal,
@@ -123,10 +123,10 @@ final class AudioEngineController {
         return result
     }
 
-    /// 将选中的输入设备应用到 AVAudioEngine
+    /// 将选中的输入设备应用到 AVAudioEngine（Apply selected input device to AVAudioEngine）
     private func applySelectedInputDevice() {
         let savedUID = UserDefaults.standard.string(forKey: "audioInputDeviceUID") ?? ""
-        guard !savedUID.isEmpty else { return }  // 空 = 系统默认
+        guard !savedUID.isEmpty else { return }  // 空 = 系统默认（Empty = system default）
 
         let devices = AudioEngineController.availableInputDevices()
         guard let device = devices.first(where: { $0.uid == savedUID }) else {
@@ -154,7 +154,7 @@ final class AudioEngineController {
         }
     }
 
-    /// 滚动分段时切换识别请求，后续 buffer 将推送到新请求
+    /// 滚动分段时切换识别请求，后续 buffer 将推送到新请求（Switch recognition request during scroll; subsequent buffers will be pushed to the new request）
     func switchRequest(_ newRequest: SFSpeechAudioBufferRecognitionRequest) {
         recognitionRequest = newRequest
     }
@@ -174,7 +174,7 @@ final class AudioEngineController {
             recordingDuration = 0
         }
 
-        // 应用用户选择的输入设备
+        // 应用用户选择的输入设备（Apply user-selected input device）
         applySelectedInputDevice()
 
         let inputNode = engine.inputNode
@@ -199,12 +199,12 @@ final class AudioEngineController {
                         contentsOf: UnsafeBufferPointer(start: channelData[0], count: count)
                     )
 
-                    // 静音检测：用 RMS 判断音量
+                    // 静音检测：用 RMS 判断音量（Silence detection: judge volume by RMS）
                     let bufferDuration = Double(count) / Double(sampleRate)
                     self.recordingDuration += bufferDuration
                     self.detectSilence(channelData: channelData[0], frameCount: count, bufferDuration: bufferDuration)
 
-                    // 攒够 fftSize 后做 FFT，50% 重叠提高时间分辨率
+                    // 攒够 fftSize 后做 FFT，50% 重叠提高时间分辨率（Perform FFT when enough samples accumulate, 50% overlap for better time resolution）
                     while self.sampleBuffer.count >= self.fftSize {
                         let chunk = Array(self.sampleBuffer.prefix(self.fftSize))
                         self.sampleBuffer.removeFirst(self.fftSize / 2)
@@ -251,17 +251,17 @@ final class AudioEngineController {
     // MARK: - 静音检测
 
     private func detectSilence(channelData: UnsafeMutablePointer<Float>, frameCount: Int, bufferDuration: Double) {
-        // 保护期内不检测
+        // 保护期内不检测（Skip detection during guard period）
         guard recordingDuration > silenceGuardPeriod else { return }
 
-        // 读取用户设置
+        // 读取用户设置（Read user settings）
         let enabled = UserDefaults.standard.bool(forKey: "silenceAutoStopEnabled")
         guard enabled else { return }
 
         let threshold = UserDefaults.standard.double(forKey: "silenceThreshold")
         let requiredDuration = UserDefaults.standard.double(forKey: "silenceDuration")
 
-        // 计算 RMS（用 Accelerate，几乎零开销）
+        // 计算 RMS（用 Accelerate，几乎零开销）（Compute RMS via Accelerate, near-zero overhead）
         var rms: Float = 0
         vDSP_rmsqv(channelData, 1, &rms, vDSP_Length(frameCount))
         let dB = 20 * log10(max(rms, 1e-7))
@@ -269,7 +269,7 @@ final class AudioEngineController {
         if Double(dB) < threshold {
             silenceDuration += bufferDuration
             if silenceDuration >= requiredDuration {
-                silenceDuration = 0  // 防止重复触发
+                silenceDuration = 0  // 防止重复触发（Prevent repeated triggers）
                 DispatchQueue.main.async { [weak self] in
                     self?.onSilenceTimeout?()
                 }
@@ -289,11 +289,11 @@ final class AudioEngineController {
         let halfSize = fftSize / 2
         let log2n = vDSP_Length(log2(Float(fftSize)))
 
-        // 加汉宁窗
+        // 加汉宁窗（Apply Hanning window）
         var windowed = [Float](repeating: 0, count: fftSize)
         vDSP_vmul(samples, 1, hannWindow, 1, &windowed, 1, vDSP_Length(fftSize))
 
-        // 实数 FFT
+        // 实数 FFT（Real-valued FFT）
         var real = [Float](repeating: 0, count: halfSize)
         var imag = [Float](repeating: 0, count: halfSize)
 
@@ -302,7 +302,7 @@ final class AudioEngineController {
                 var split = DSPSplitComplex(realp: realBuf.baseAddress!,
                                             imagp: imagBuf.baseAddress!)
 
-                // 把 real 信号打包成复数格式
+                // 把 real 信号打包成复数格式（Pack real signal into complex format）
                 windowed.withUnsafeBytes { rawPtr in
                     rawPtr.withMemoryRebound(to: DSPComplex.self) { complexPtr in
                         vDSP_ctoz(complexPtr.baseAddress!, 2, &split, 1, vDSP_Length(halfSize))
@@ -311,15 +311,15 @@ final class AudioEngineController {
 
                 vDSP_fft_zrip(fftSetup, &split, 1, log2n, FFTDirection(FFT_FORWARD))
 
-                // 幅度（不是功率），正确归一化：除以 N 再取 sqrt
+                // 幅度（不是功率），正确归一化：除以 N 再取 sqrt（Magnitude (not power), correct normalization: divide by N then sqrt）
                 var mags = [Float](repeating: 0, count: halfSize)
                 vDSP_zvabs(&split, 1, &mags, 1, vDSP_Length(halfSize))
-                // vDSP_zvabs 输出是 sqrt(r²+i²)，但 zrip 的输出在 0 号位不含虚部
-                // 归一化：除以 (fftSize/2)
+                // vDSP_zvabs 输出是 sqrt(r²+i²)，但 zrip 的输出在 0 号位不含虚部（vDSP_zvabs outputs sqrt(r²+i²), but zrip output at index 0 has no imaginary part）
+                // 归一化：除以 (fftSize/2)（Normalization: divide by fftSize/2）
                 var norm = Float(halfSize)
                 vDSP_vsdiv(mags, 1, &norm, &mags, 1, vDSP_Length(halfSize))
 
-                // 频谱只用于判断“有人声”和制造细微纹理，不再使用全频 RMS。
+                // 频谱只用于判断“有人声”和制造细微纹理，不再使用全频 RMS。（Spectrum only determines “voice present” and creates subtle texture; no longer using full-band RMS.）
                 let freqPerBin = sampleRate / Float(self.fftSize)
                 let spectralLevels = self.bandFreqRanges.enumerated().map { (i, range) in
                     let (loFreq, hiFreq) = range
@@ -340,7 +340,7 @@ final class AudioEngineController {
                 return spectralLevels.enumerated().map { (i, spectral) in
                     let profile = i < self.visualBarProfile.count ? self.visualBarProfile[i] : 1
 
-                    // 应用图标式分布：全人声居中，两侧随动但不抢视觉重心。
+                    // 应用图标式分布：全人声居中，两侧随动但不抢视觉重心。（Apply icon-style distribution: voice centered, sides follow but don't steal visual focus.）
                     let texture = 0.99 + spectral * 0.025
                     return max(0, min(1, voiceEnergy * profile * texture))
                 }

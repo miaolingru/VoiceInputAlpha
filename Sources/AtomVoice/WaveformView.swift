@@ -3,18 +3,18 @@ import Cocoa
 final class WaveformView: NSView {
     // MARK: - Layout
     private let barCount = 5
-    private let barWidth: CGFloat  = 3.0   // 5根 × 3 + 4间距 × 2 = 23pt，居中在28pt容器内
+    private let barWidth: CGFloat  = 3.0   // 5根 × 3 + 4间距 × 2 = 23pt，居中在28pt容器内（5 bars × 3 + 4 gaps × 2 = 23pt, centered in 28pt container）
     private let barSpacing: CGFloat = 2.0
     private let minBarHeight: CGFloat = 3.0
     private let maxBarHeight: CGFloat = 26.0
 
     // MARK: - 正弦波参数
-    // 仅提供缓慢微动，不再让高频细节造成碎跳。
+    // 仅提供缓慢微动，不再让高频细节造成碎跳。（Provides only slow micro-motion, no more high-freq detail causing jitter.）
     private let oscFreqs: [CGFloat]  = [2.8, 3.4, 3.9, 3.2, 2.6]
     private let initPhases: [CGFloat] = [0.0, 2.1, 0.8, 2.9, 1.4]
 
     // MARK: - 状态
-    private var bandLevels: [CGFloat] = [0, 0, 0, 0, 0]   // 来自 FFT 的 5 个频段能量
+    private var bandLevels: [CGFloat] = [0, 0, 0, 0, 0]   // 来自 FFT 的 5 个频段能量（5 band energy levels from FFT）
 
     private var barHeights: [CGFloat]
     private var displayTime: CGFloat = 0
@@ -23,12 +23,12 @@ final class WaveformView: NSView {
     private var lastTickDate: Date = Date()
 
     // MARK: - 响应速度
-    // attack 快（说话时立刻响应），release 慢（有余韵感）
-    private let attackCoeff:  CGFloat = 0.86   // 开口时马上响应
-    private let releaseCoeff: CGFloat = 0.12   // 回落慢一点，保留阻尼和余韵
-    private let levelDeadband: CGFloat = 0.025  // 吃掉小幅抖动，避免细碎弹跳
+    // attack 快（说话时立刻响应），release 慢（有余韵感）（Attack is fast (responds immediately when speaking), release is slow (has lingering feel)）
+    private let attackCoeff:  CGFloat = 0.86   // 开口时马上响应（Responds immediately when speaking）
+    private let releaseCoeff: CGFloat = 0.12   // 回落慢一点，保留阻尼和余韵（Falls back slowly, preserving damping and afterglow）
+    private let levelDeadband: CGFloat = 0.025  // 吃掉小幅抖动，避免细碎弹跳（Absorbs small jitter, avoids fine bouncing）
 
-    // 待机呼吸幅度（无声时轻微摆动）
+    // 待机呼吸幅度（无声时轻微摆动）（Idle breathing amplitude (slight sway when silent)）
     private let idleAmplitude: CGFloat = 0.03
 
     // MARK: - Init
@@ -48,7 +48,7 @@ final class WaveformView: NSView {
 
     // MARK: - Public
 
-    /// 接收来自 AudioEngine FFT 的 5 频段能量（0-1）
+    /// 接收来自 AudioEngine FFT 的 5 频段能量（0-1）（Receive 5-band energy (0-1) from AudioEngine FFT）
     func updateBands(_ bands: [Float]) {
         for i in 0..<min(bands.count, barCount) {
             let target = filteredLevel(CGFloat(bands[i]), current: bandLevels[i])
@@ -61,7 +61,7 @@ final class WaveformView: NSView {
         }
     }
 
-    /// 兼容旧的 RMS 接口（全频段同等驱动）
+    /// 兼容旧的 RMS 接口（全频段同等驱动）（Compatible with legacy RMS interface (all bands driven equally)）
     func updateRMS(_ rms: Float) {
         let level = CGFloat(rms)
         for i in 0..<barCount {
@@ -109,7 +109,7 @@ final class WaveformView: NSView {
         displayTime += dt
 
         for i in 0..<barCount {
-            // 正弦波只做轻微调制，真实音量决定主体高度。
+            // 正弦波只做轻微调制，真实音量决定主体高度。（Sine wave only provides subtle modulation; real volume determines bar height.）
             let sine = sin(displayTime * oscFreqs[i] + initPhases[i])  // -1…1
             let level = bandLevels[i]
 
@@ -119,7 +119,7 @@ final class WaveformView: NSView {
             let normalized = min(1, level * pulse + idle)
             let targetHeight = minBarHeight + (maxBarHeight - minBarHeight) * normalized
 
-            // 竖条高度平滑追踪目标
+            // 竖条高度平滑追踪目标（Bar height smoothly tracks target）
             let coeff: CGFloat = targetHeight > barHeights[i] ? 0.46 : 0.16
             barHeights[i] += (targetHeight - barHeights[i]) * coeff
             barHeights[i] = max(minBarHeight, min(maxBarHeight, barHeights[i]))
@@ -144,7 +144,7 @@ final class WaveformView: NSView {
         let totalWidth = CGFloat(barCount) * barWidth + CGFloat(barCount - 1) * barSpacing
         let startX = (bounds.width - totalWidth) / 2
 
-        // labelColor 自动适配深浅色及玻璃/毛玻璃背景
+        // labelColor 自动适配深浅色及玻璃/毛玻璃背景（labelColor auto-adapts to light/dark mode and glass/frosted backgrounds）
         let baseColor: NSColor = .labelColor
 
         for i in 0..<barCount {

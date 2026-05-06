@@ -1,7 +1,7 @@
 import Cocoa
 import Security
 
-/// 轻量自动更新模块：检查 GitHub Releases，下载并替换 .app
+/// 轻量自动更新模块：检查 GitHub Releases，下载并替换 .app（Lightweight auto-update module: check GitHub Releases, download and replace .app）
 final class UpdateChecker: NSObject {
     static let shared = UpdateChecker()
     private override init() {}
@@ -16,8 +16,8 @@ final class UpdateChecker: NSObject {
 
     // MARK: - 公开 API
 
-    /// 检查更新
-    /// - Parameter silent: true = 无新版时不弹提示（启动时后台静默检查用）
+    /// 检查更新（Check for updates）
+    /// - Parameter silent: true = 无新版时不弹提示，启动时后台静默检查用（true = no alert when up-to-date, for silent background check on launch）
     func checkForUpdates(silent: Bool = false) {
         let includeBeta = UserDefaults.standard.bool(forKey: "includeBetaUpdates")
         fetchLatestRelease(includeBeta: includeBeta) { [weak self] result in
@@ -45,6 +45,7 @@ final class UpdateChecker: NSObject {
 
     private func fetchLatestRelease(includeBeta: Bool, completion: @escaping (Result<Release, Error>) -> Void) {
         // includeBeta 时拉取列表取第一条（含 pre-release），否则只取正式最新版
+        // (When includeBeta is true, fetch the list and take the first entry including pre-release; otherwise fetch only the latest stable release)
         let urlStr = includeBeta
             ? "https://api.github.com/repos/\(owner)/\(repo)/releases?per_page=1"
             : "https://api.github.com/repos/\(owner)/\(repo)/releases/latest"
@@ -56,7 +57,7 @@ final class UpdateChecker: NSObject {
             if let error { completion(.failure(error)); return }
             guard let data else { completion(.failure(URLError(.badServerResponse))); return }
             do {
-                // 列表端点返回数组，latest 端点返回对象
+                // 列表端点返回数组，latest 端点返回对象（List endpoint returns array, latest endpoint returns object）
                 let jsonObject = try JSONSerialization.jsonObject(with: data)
                 let json: [String: Any]?
                 if let arr = jsonObject as? [[String: Any]] {
@@ -72,7 +73,7 @@ final class UpdateChecker: NSObject {
                 let isPreRelease = json["prerelease"] as? Bool ?? false
                 let version = tagName.hasPrefix("v") ? String(tagName.dropFirst()) : tagName
 
-                // 优先 Universal，其次按当前架构选包
+                // 优先 Universal，其次按当前架构选包（Prefer Universal, then select by current architecture）
                 #if arch(arm64)
                 let preferred = ["Universal", "AppleSilicon"]
                 #else
@@ -290,7 +291,7 @@ final class UpdateChecker: NSObject {
         }
     }
 
-    /// 写一个临时 shell 脚本，等待进程退出后替换 .app 并重启
+    /// 写一个临时 shell 脚本，等待进程退出后替换 .app 并重启（Write a temporary shell script that waits for process exit, replaces .app, and relaunches）
     private func applyAndRelaunch(newAppURL: URL) {
         let currentPath = Bundle.main.bundlePath
         let newPath     = newAppURL.path
@@ -414,6 +415,7 @@ final class UpdateChecker: NSObject {
     }
 
     /// 解析版本号，兼容 GitHub tag 的 "0.10.1-Beta-2" 和 Info.plist 的 "0.10.1 Beta 2"。
+    /// (Parse version string, compatible with GitHub tag format "0.10.1-Beta-2" and Info.plist format "0.10.1 Beta 2".)
     private func parseVersion(_ version: String) -> ParsedVersion {
         var normalized = version.trimmingCharacters(in: .whitespacesAndNewlines)
         if normalized.lowercased().hasPrefix("v") {
@@ -442,6 +444,8 @@ final class UpdateChecker: NSObject {
 
     /// 比较两个版本号（支持 pre-release 格式，如 0.9.5-beta.1 / 0.9.5 Beta 1）
     /// 规则：基础版本号更大 → 更新；基础相同时 stable > pre-release；pre-release 按标识符比较。
+    /// (Compare two version numbers (supports pre-release formats like 0.9.5-beta.1 / 0.9.5 Beta 1).
+    /// Rules: higher base version → newer; same base: stable > pre-release; pre-release compared by identifiers.)
     private func isNewer(_ version: String, than current: String) -> Bool {
         let version = parseVersion(version)
         let current = parseVersion(current)

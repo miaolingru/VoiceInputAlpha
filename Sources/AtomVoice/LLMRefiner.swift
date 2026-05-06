@@ -8,6 +8,8 @@ private let logger = Logger(subsystem: "com.blacksquarre.AtomVoice", category: "
 private final class StreamDelegate: NSObject, URLSessionDataDelegate {
     // 取消标志：被 LLMRefiner.cancel() 置 true 后，所有后续回调（包括已 enqueue
     // 到主线程的 onProgress / onComplete）都应静默丢弃，避免污染新一次录音的胶囊。
+    // (Cancel flag: once set to true by LLMRefiner.cancel(), all subsequent callbacks — including
+    // onProgress / onComplete already enqueued on the main thread — should be silently discarded to avoid polluting the next recording's capsule.)
     var cancelled = false
     private var buffer = Data()
     private var accumulated = ""
@@ -25,7 +27,7 @@ private final class StreamDelegate: NSObject, URLSessionDataDelegate {
         self.onComplete  = onComplete
     }
 
-    // 收到响应头时检查 HTTP 状态码
+    // 收到响应头时检查 HTTP 状态码（Check HTTP status code when response header is received）
     func urlSession(_ session: URLSession,
                     dataTask: URLSessionDataTask,
                     didReceive response: URLResponse,
@@ -36,7 +38,7 @@ private final class StreamDelegate: NSObject, URLSessionDataDelegate {
         completionHandler(.allow)
     }
 
-    // 收到数据块
+    // 收到数据块（Received data chunk）
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
         if cancelled { return }
         if httpError != nil {
@@ -47,22 +49,22 @@ private final class StreamDelegate: NSObject, URLSessionDataDelegate {
         processBuffer()
     }
 
-    // 全部完成
+    // 全部完成（All done）
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         if cancelled { return }
         if let nsErr = error as NSError? {
             if nsErr.code == NSURLErrorCancelled {
-                // 主动取消，不触发完成回调
+                // 主动取消，不触发完成回调（Cancelled intentionally, don't trigger completion callback）
                 return
             }
-            // 其他网络错误
+            // 其他网络错误（Other network errors）
             DispatchQueue.main.async { [weak self] in
                 guard let self, !self.cancelled else { return }
                 self.onComplete(nil, nsErr.localizedDescription)
             }
             return
         }
-        // HTTP 错误
+        // HTTP 错误（HTTP error）
         if let statusCode = httpError {
             let detail = (try? JSONSerialization.jsonObject(with: errorBuffer) as? [String: Any])
                 .flatMap { $0["error"] as? [String: Any] }
@@ -74,7 +76,7 @@ private final class StreamDelegate: NSObject, URLSessionDataDelegate {
             }
             return
         }
-        // 成功
+        // 成功（Success）
         let result = accumulated.trimmingCharacters(in: .whitespacesAndNewlines)
         DispatchQueue.main.async { [weak self] in
             guard let self, !self.cancelled else { return }
@@ -87,7 +89,7 @@ private final class StreamDelegate: NSObject, URLSessionDataDelegate {
     private func processBuffer() {
         guard let text = String(data: buffer, encoding: .utf8) else { return }
         let lines = text.components(separatedBy: "\n")
-        // 末尾不完整的行留在 buffer
+        // 末尾不完整的行留在 buffer（Leave incomplete trailing line in buffer）
         buffer = text.hasSuffix("\n") ? Data() : (lines.last?.data(using: .utf8) ?? Data())
         for line in lines.dropLast() {
             parseLine(line)
@@ -172,13 +174,15 @@ final class LLMRefiner {
         }
     }
 
-    // 持有流式 session / delegate，防止被释放
+    // 持有流式 session / delegate，防止被释放（Hold stream session / delegate to prevent deallocation）
     private var streamSession: URLSession?
     private var streamDelegate: StreamDelegate?
 
     func cancel() {
         // 先标记 delegate 为已取消，确保仍排在主线程队列里的 onProgress / onComplete
         // 不再回调（否则会污染随后启动的新一次录音胶囊）。
+        // (First mark delegate as cancelled, ensuring onProgress / onComplete still queued on the main thread
+        // won't fire back — otherwise they'd pollute the capsule of a subsequent recording session.)
         streamDelegate?.cancelled = true
         streamSession?.invalidateAndCancel()
         streamSession = nil
@@ -188,6 +192,7 @@ final class LLMRefiner {
     // MARK: - 主要接口
 
     /// onProgress: 流式 token 回调（主线程，可选），completion: 最终结果
+    /// (onProgress: streaming token callback on main thread, optional; completion: final result)
     func refine(text: String,
                 onProgress: ((String) -> Void)? = nil,
                 completion: @escaping (String?, String?) -> Void) {
@@ -219,7 +224,7 @@ final class LLMRefiner {
 
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
-        // 取消上一次未完成的请求
+        // 取消上一次未完成的请求（Cancel the previous unfinished request）
         streamSession?.invalidateAndCancel()
 
         let startTime = Date()
@@ -281,7 +286,7 @@ final class LLMRefiner {
         base.contains("anthropic.com")
     }
 
-    /// 根据 provider 类型构建正确的 endpoint URL
+    /// 根据 provider 类型构建正确的 endpoint URL（Build the correct endpoint URL based on provider type）
     static func buildURL(base: String) -> String {
         var b = base
         while b.hasSuffix("/") { b = String(b.dropLast()) }
@@ -291,7 +296,7 @@ final class LLMRefiner {
         return buildCompletionsURL(base: base)
     }
 
-    /// 兼容旧调用路径（OpenAI 系列）
+    /// 兼容旧调用路径（OpenAI 系列）（Backward-compatible with legacy call paths (OpenAI series)）
     static func buildCompletionsURL(base: String) -> String {
         var b = base
         while b.hasSuffix("/") { b = String(b.dropLast()) }

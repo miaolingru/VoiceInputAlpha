@@ -4,9 +4,9 @@ import Cocoa
 
 struct TriggerKeyOption {
     let keyCode: UInt16
-    let locKey: String          // 用于本地化菜单标题
-    let flagMask: CGEventFlags  // 对应的修饰键 flag
-    let symbolKey: String       // 本地化 key，用于顶部提示文字
+    let locKey: String          // 用于本地化菜单标题（Localization key for menu title）
+    let flagMask: CGEventFlags  // 对应的修饰键 flag（Corresponding modifier key flag）
+    let symbolKey: String       // 本地化 key，用于顶部提示文字（Localization key for top prompt text）
 
     static let all: [TriggerKeyOption] = [
         TriggerKeyOption(keyCode: 63, locKey: "menu.triggerKey.fn",           flagMask: .maskSecondaryFn, symbolKey: "menu.triggerKey.fn.symbol"),
@@ -25,14 +25,14 @@ struct TriggerKeyOption {
 final class FnKeyMonitor {
     private let onFnDown: () -> Void
     private let onFnUp: () -> Void
-    var onTapDisabled: (() -> Void)?  // 权限丢失时通知外部
+    var onTapDisabled: (() -> Void)?  // 权限丢失时通知外部（Notify external when accessibility permission is lost）
 
-    // 录音期间的按键回调
-    var onEscPressed: (() -> Void)?         // ESC 取消录音
-    var onImmediateStop: ((String?) -> Void)?  // Space/Backspace/标点立即上屏
-    var isRecording = false                  // 由 AppDelegate 设置
+    // 录音期间的按键回调（Key callbacks during recording）
+    var onEscPressed: (() -> Void)?         // ESC 取消录音（ESC cancels recording）
+    var onImmediateStop: ((String?) -> Void)?  // Space/Backspace/标点立即上屏（Space/Backspace/punctuation injects immediately）
+    var isRecording = false                  // 由 AppDelegate 设置（Set by AppDelegate）
 
-    // 当前触发键（可运行时修改，修改后自动重置按下状态）
+    // 当前触发键，可运行时修改，修改后自动重置按下状态（Current trigger key, can be changed at runtime, auto-resets pressed state on change）
     var triggerKeyCode: UInt16 = 63 {
         didSet { triggerIsDown = false }
     }
@@ -53,6 +53,7 @@ final class FnKeyMonitor {
 
     func start() {
         // 监听按键 + 修饰键 + 系统定义事件（NX_SYSDEFINED = 14，Globe 键行为通过此事件触发）
+        // (Listen for key events + modifier flags + system-defined events; NX_SYSDEFINED = 14 is how the Globe key behaves)
         let mask: CGEventMask = (1 << CGEventType.flagsChanged.rawValue)
             | (1 << CGEventType.keyDown.rawValue)
             | (1 << CGEventType.keyUp.rawValue)
@@ -107,6 +108,7 @@ final class FnKeyMonitor {
         }
 
         // NX_SYSDEFINED（type 14）：仅在使用 Fn/Globe 作为触发键时才需要拦截系统字符检视器事件
+        // (NX_SYSDEFINED (type 14): only intercept system character viewer events when using Fn/Globe as trigger key)
         if type.rawValue == 14 {
             guard triggerKeyCode == FnKeyMonitor.fnKeyCode else {
                 return Unmanaged.passUnretained(event)
@@ -134,6 +136,7 @@ final class FnKeyMonitor {
             let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
 
             // Fn 专属路径：某些键盘上 Fn/Globe 键会产生真实的 keyDown/keyUp
+            // (Fn-specific path: on some keyboards, the Fn/Globe key generates real keyDown/keyUp events)
             if triggerKeyCode == FnKeyMonitor.fnKeyCode && keyCode == FnKeyMonitor.fnKeyCode {
                 if type == .keyDown && !triggerIsDown {
                     triggerIsDown = true
@@ -147,7 +150,7 @@ final class FnKeyMonitor {
                 return nil
             }
 
-            // 录音期间拦截特殊按键（仅 keyDown）
+            // 录音期间拦截特殊按键（仅 keyDown）（Intercept special keys during recording, keyDown only）
             if type == .keyDown && isRecording {
                 switch keyCode {
                 case FnKeyMonitor.escKeyCode:
@@ -183,10 +186,10 @@ final class FnKeyMonitor {
             let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
             let option = TriggerKeyOption.option(for: triggerKeyCode)
 
-            // 通用触发键检测：通过 keyCode 精确匹配当前触发键
+            // 通用触发键检测：通过 keyCode 精确匹配当前触发键（Generic trigger key detection: match current trigger key by keyCode）
             if keyCode == triggerKeyCode {
                 let isActive = flags.contains(option.flagMask)
-                // 排除触发键自身 flag 后，检查是否有其他修饰键同时按下
+                // 排除触发键自身 flag 后，检查是否有其他修饰键同时按下（After excluding trigger key's own flag, check if other modifiers are pressed simultaneously）
                 let otherMods: CGEventFlags = [.maskCommand, .maskAlternate, .maskControl, .maskShift, .maskSecondaryFn]
                 let hasOtherMods = !flags.intersection(otherMods.subtracting(option.flagMask)).isEmpty
 
@@ -206,6 +209,7 @@ final class FnKeyMonitor {
             }
 
             // Fn 键 flag-only 备用检测（某些机型 keyCode 不稳定为 63）
+            // (Fn key flag-only fallback detection — on some models keyCode is unstable and stays at 63)
             if triggerKeyCode == FnKeyMonitor.fnKeyCode {
                 let hasFn = flags.contains(.maskSecondaryFn)
                 let otherModifiers: CGEventFlags = [.maskCommand, .maskAlternate, .maskControl, .maskShift]

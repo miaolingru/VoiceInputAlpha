@@ -76,7 +76,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 guard let self else { return }
                 let silenceMode = UserDefaults.standard.bool(forKey: "silenceAutoStopEnabled")
                 if silenceMode {
-                    // 切换模式：按一次开始，再按一次手动停止
+                    // 切换模式：按一次开始，再按一次手动停止（Toggle mode: press once to start, press again to stop manually）
                     if self.isRecording {
                         self.stopRecording()
                     } else {
@@ -89,7 +89,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             onFnUp: { [weak self] in
                 guard let self else { return }
                 let silenceMode = UserDefaults.standard.bool(forKey: "silenceAutoStopEnabled")
-                // 静音模式下松开 Fn 不停止录音
+                // 静音模式下松开 Fn 不停止录音（In silence mode, releasing Fn does not stop recording）
                 if !silenceMode {
                     self.stopRecording()
                 }
@@ -102,20 +102,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menuBarController.onTriggerKeyChanged = { [weak self] keyCode in
             self?.fnKeyMonitor.triggerKeyCode = keyCode
         }
-        // ESC 取消录音（不上屏）
+        // ESC 取消录音，不上屏（ESC cancels recording, no text injection）
         fnKeyMonitor.onEscPressed = { [weak self] in self?.cancelRecording() }
-        // Space/Backspace 立即上屏（跳过 LLM）
+        // Space/Backspace 立即上屏，跳过 LLM（Space/Backspace injects text immediately, skipping LLM）
         fnKeyMonitor.onImmediateStop = { [weak self] punctuation in
             self?.stopRecordingImmediate(appending: punctuation)
         }
         fnKeyMonitor.start()
 
-        // 启动 5 秒后静默检查更新（不阻塞启动流程）
+        // 启动 5 秒后静默检查更新，不阻塞启动流程（Silently check for updates 5s after launch, non-blocking）
         DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
             UpdateChecker.shared.checkForUpdates(silent: true)
         }
 
-        // 监听系统内存压力，仅在内存严重不足时释放模型
+        // 监听系统内存压力，仅在内存严重不足时释放模型（Monitor system memory pressure, release model only on critical shortage）
         memoryPressureSource = DispatchSource.makeMemoryPressureSource(eventMask: [.critical], queue: .main)
         memoryPressureSource?.setEventHandler { [weak self] in
             guard let self else { return }
@@ -125,7 +125,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         memoryPressureSource?.resume()
 
-        // 监听前台应用切换：录音期间切换程序则取消录音
+        // 监听前台应用切换：录音期间切换程序则取消录音（Monitor active app change: cancel recording when switching apps）
         NSWorkspace.shared.notificationCenter.addObserver(
             self,
             selector: #selector(activeAppDidChange(_:)),
@@ -142,7 +142,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .filter { $0.processIdentifier != currentPID }
         guard !otherApps.isEmpty else { return }
 
-        // 菜单栏应用不应该多开；新实例启动时清理旧实例，避免出现多个状态栏菜单。
+        // 菜单栏应用不应该多开；新实例启动时清理旧实例，避免出现多个状态栏菜单（Menu bar apps should not run multiple instances; terminate old ones to avoid duplicate status bar menus）
         otherApps.forEach { app in
             print("[AppDelegate] 正在退出旧实例 pid=\(app.processIdentifier)")
             app.terminate()
@@ -158,10 +158,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func activeAppDidChange(_ notification: Notification) {
         guard isRecording else { return }
-        // 静音模式（单击说话）下，切换窗口是正常流程，不取消录音
+        // 静音模式（单击说话）下，切换窗口是正常流程，不取消录音（In silence mode (tap-to-talk), switching windows is normal flow, don't cancel recording）
         let silenceMode = UserDefaults.standard.bool(forKey: "silenceAutoStopEnabled")
         if silenceMode { return }
-        // 长按模式下切换了前台应用，取消本次录音
+        // 长按模式下切换了前台应用，取消本次录音（In hold-to-talk mode, switched frontmost app, cancel this recording）
         cancelRecording()
     }
 
@@ -169,11 +169,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// 在 LSUIElement=true 的菜单栏应用里，先把窗口移动到当前 Space，
     /// 再显示和激活，避免在全屏 app 中打开窗口时跳回桌面。
+    /// (In a LSUIElement=true menu bar app, move the window to the current Space first,
+    /// then show and activate it, to avoid jumping back to the desktop when opening from a fullscreen app.)
     static func bringToFront(_ window: NSWindow) {
         bringToFront(window, transient: false)
     }
 
     /// 从状态栏菜单打开的辅助窗口应留在当前 Space，包括其他 app 的全屏 Space。
+    /// (Auxiliary windows opened from the status bar menu should stay in the current Space, including fullscreen Spaces of other apps.)
     static func bringToFrontInCurrentSpace(_ window: NSWindow) {
         bringToFront(window, transient: true)
     }
@@ -188,7 +191,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.makeKeyAndOrderFront(nil)
         NSApp.activate()
 
-        // 菜单收起后一帧再确认一次，避免状态栏菜单焦点覆盖窗口焦点。
+        // 菜单收起后一帧再确认一次，避免状态栏菜单焦点覆盖窗口焦点（Re-confirm one frame after menu dismisses, to prevent status bar menu focus from overriding window focus）
         DispatchQueue.main.async {
             window.orderFrontRegardless()
             window.makeKeyAndOrderFront(nil)
@@ -208,6 +211,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// 窗口关闭时调用：若已无其他普通窗口可见，恢复 accessory 策略。
+    /// (Called when a window closes: if no other regular windows are visible, restore accessory activation policy.)
     static func resetActivationIfNeeded(closing: NSWindow? = nil) {
         let hasOther = NSApp.windows.contains { window in
             if let closing, window === closing { return false }
@@ -263,7 +267,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        // Sherpa 引擎：优先读缓存标记，只有标记为 false 时才做一次自愈检查。
+        // Sherpa 引擎：优先读缓存标记，只有标记为 false 时才做一次自愈检查（Sherpa engine: prioritize cached flag; only run self-heal check when flag is false）
         let engine = UserDefaults.standard.string(forKey: "recognitionEngine") ?? "apple"
         if engine == "sherpaOnnx" {
             if !UserDefaults.standard.bool(forKey: "sherpaModelsReady") {
@@ -277,7 +281,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         
-        // 取消正在进行的 LLM 处理（如果有）
+        // 取消正在进行的 LLM 处理，如果有（Cancel any ongoing LLM processing, if any）
         llmRefiner.cancel()
         
         isRecording = true
@@ -301,10 +305,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
             if currentRecordingEngine == "sherpaOnnx" {
                 if sherpaRecognizer.isModelLoaded {
-                    // 模型已缓存，直接开始录音，不显示加载动画
+                    // 模型已缓存，直接开始录音，不显示加载动画（Model cached, start recording directly without loading animation）
                     startSherpaRecordingAfterModelLoad()
                 } else {
-                    // 首次加载模型，显示扫光加载动画
+                    // 首次加载模型，显示扫光加载动画（First-time model load, show shimmer loading animation）
                     capsuleWindow.showProgress(loc("sherpa.loadingModel"))
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [self] in
                         guard isRecording, currentRecordingEngine == "sherpaOnnx" else { return }
@@ -351,7 +355,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             volumeController.restoreVolume()
             print("[SherpaOnnx] 模型加载失败: \(error)")
 
-            // 文件缺失或模型无法创建时，重置标记并提示重新下载。
+            // 文件缺失或模型无法创建时，重置标记并提示重新下载（When files are missing or model cannot be created, reset flag and prompt re-download）
             if sherpaRecognizer.lastStartFailureKind == .missingRuntime ||
                 sherpaRecognizer.lastStartFailureKind == .missingModel ||
                 sherpaRecognizer.lastStartFailureKind == .invalidModel {
@@ -362,7 +366,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     self?.promptSherpaReDownload()
                 }
             } else {
-                // 文件存在但加载失败（dylib 问题等），只报错不重置标记
+                // 文件存在但加载失败（dylib 问题等），只报错不重置标记（Files exist but load failed (e.g. dylib issue), only show error without resetting flag）
                 capsuleWindow.showError(error, dismissAfter: 6)
             }
             return
@@ -429,7 +433,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     DispatchQueue.main.async {
                         guard let self else { return }
                         if let errorMsg {
-                            // 立即注入文字，同时胶囊显示错误 3 秒
+                            // 立即注入文字，同时胶囊显示错误 3 秒（Inject text immediately, while capsule shows error for 3 seconds）
                             self.textInjector.inject(text: processedText)
                             self.capsuleWindow.showError(errorMsg)
                             return
@@ -581,7 +585,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let downloader = SherpaModelDownloader.shared
 
-        // 显示胶囊（不显示波形）
+        // 显示胶囊，不显示波形（Show capsule without waveform）
         capsuleWindow.show(showRecordingTimer: false)
         capsuleWindow.showProgress(loc("sherpa.downloading.start"))
 
@@ -628,7 +632,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// ESC 取消录音：停止一切，不注入文字
+    /// ESC 取消录音：停止一切，不注入文字（ESC cancels recording: stop everything, no text injection）
     private func cancelRecording() {
         isRecording = false
         fnKeyMonitor.isRecording = false
@@ -651,7 +655,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Space/Backspace/标点立即上屏：停止录音，跳过 LLM，直接注入
+    /// Space/Backspace/标点立即上屏：停止录音，跳过 LLM，直接注入（Space/Backspace/punctuation injects immediately: stop recording, skip LLM, inject directly）
     private func stopRecordingImmediate(appending punctuation: String? = nil) {
         guard isRecording else { return }
         isRecording = false
@@ -673,7 +677,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 return
             }
 
-            // 本地自动标点（保留），但跳过 LLM
+            // 本地自动标点（保留），但跳过 LLM（Local auto-punctuation applied, but skip LLM）
             let processedText = applyAutoPunctuation(to: rawText)
             let finalText = textByAppendingImmediatePunctuation(punctuation, to: processedText)
 

@@ -7,7 +7,7 @@
 <h3 align="center">Appuie, parle.</h3>
 <p align="center">Dictée vocale légère et axée sur la confidentialité, qui écrit dans n'importe quelle app de ton Mac, sans limite de durée.</p>
 
-![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![Swift](https://img.shields.io/badge/Swift-5.9-orange) ![License](https://img.shields.io/badge/license-MIT-green)
+
 
 ---
 

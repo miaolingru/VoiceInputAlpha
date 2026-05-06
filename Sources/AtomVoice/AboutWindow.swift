@@ -35,7 +35,7 @@ final class AboutWindowController: NSObject {
         vStack.translatesAutoresizingMaskIntoConstraints = false
         cv.addSubview(vStack)
 
-        // 顶部留出 titlebar 区域
+        // 顶部留出 titlebar 区域（Leave space for titlebar at top）
         NSLayoutConstraint.activate([
             vStack.topAnchor.constraint(equalTo: cv.topAnchor, constant: 36),
             vStack.leadingAnchor.constraint(equalTo: cv.leadingAnchor, constant: 20),
@@ -43,7 +43,7 @@ final class AboutWindowController: NSObject {
             vStack.bottomAnchor.constraint(lessThanOrEqualTo: cv.bottomAnchor, constant: -20),
         ])
 
-        // ── 图标 ───────────────────────────────────────────────
+        // ── 图标（Icon）────────────────────────────────────────────────
         let iconView = NSImageView()
         iconView.image = NSApp.applicationIconImage
         iconView.imageScaling = .scaleProportionallyDown
@@ -53,14 +53,14 @@ final class AboutWindowController: NSObject {
         vStack.addArrangedSubview(iconView)
         vStack.setCustomSpacing(12, after: iconView)
 
-        // ── 应用名称 ────────────────────────────────────────────
+        // ── 应用名称（App Name）──────────────────────────────────────────
         let nameLabel = NSTextField(labelWithString: loc("about.appName"))
         nameLabel.font = .boldSystemFont(ofSize: 17)
         nameLabel.textColor = .labelColor
         vStack.addArrangedSubview(nameLabel)
         vStack.setCustomSpacing(2, after: nameLabel)
 
-        // ── 英文副标题（非英语环境显示）────────────────────────
+        // ── 英文副标题（English subtitle, shown in non-English locales）────────────────────────
         let langCode = Locale.current.language.languageCode?.identifier ?? "en"
         if langCode != "en" {
             let enLabel = NSTextField(labelWithString: "AtomVoice")
@@ -72,7 +72,7 @@ final class AboutWindowController: NSObject {
             vStack.setCustomSpacing(4, after: nameLabel)
         }
 
-        // ── 版本号 ──────────────────────────────────────────────
+        // ── 版本号（Version）────────────────────────────────────────────
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         let build   = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
         let verLabel = NSTextField(labelWithString: loc("about.version", version, build))
@@ -81,7 +81,7 @@ final class AboutWindowController: NSObject {
         vStack.addArrangedSubview(verLabel)
         vStack.setCustomSpacing(4, after: verLabel)
 
-        // ── 开发构建标识（仅 DEBUG_BUILD 时显示）────────────────
+        // ── 开发构建标识（Development build badge, DEBUG_BUILD only）────────────────
         #if DEBUG_BUILD
         let devBadge = NSTextField(labelWithString: "⚙ Development Build")
         devBadge.font = .monospacedSystemFont(ofSize: 10, weight: .regular)
@@ -93,7 +93,7 @@ final class AboutWindowController: NSObject {
         vStack.setCustomSpacing(20, after: verLabel)
         #endif
 
-        // ── 链接：Bilibili + GitHub 左右排列，仅图标，浅色 ───────
+        // ── 链接：Bilibili + GitHub 左右排列，仅图标，浅色（Links: Bilibili + GitHub side by side, icon-only, light tint）──────────────
         let linksRow = NSStackView()
         linksRow.orientation = .horizontal
         linksRow.spacing = 20
@@ -115,7 +115,7 @@ final class AboutWindowController: NSObject {
         vStack.addArrangedSubview(linksRow)
         vStack.setCustomSpacing(20, after: linksRow)
 
-        // ── 版权 ────────────────────────────────────────────────
+        // ── 版权（Copyright）────────────────────────────────────────────
         let copyright = NSTextField(labelWithString: loc("about.copyright"))
         copyright.font = .systemFont(ofSize: 10.5)
         copyright.textColor = .tertiaryLabelColor
@@ -160,7 +160,7 @@ final class AboutWindowController: NSObject {
                                     accessibilityDescription: nil)?
                 .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 16, weight: .regular))
         }
-        imgView.contentTintColor = .secondaryLabelColor   // 浅色
+        imgView.contentTintColor = .secondaryLabelColor   // 浅色（Light tint）
 
         btn.addSubview(imgView)
         NSLayoutConstraint.activate([

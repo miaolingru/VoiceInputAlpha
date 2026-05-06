@@ -42,42 +42,42 @@ final class TextInjector {
     }
 
     private func performInject(text: String, completion: (() -> Void)? = nil) {
-        // 如果光标后方已有标点，则移除注入文本末尾的标点
+        // 如果光标后方已有标点，则移除注入文本末尾的标点（If punctuation already exists after cursor, remove trailing punctuation from injected text）
         var finalText = text
         if let nextChar = getCharacterAfterCursor(),
            PunctuationProcessor.isSentenceEndingPunctuation(nextChar) {
             finalText = removeTrailingPunctuation(text)
         }
 
-        // Save current clipboard
+        // 保存当前剪贴板（Save current clipboard）
         let pasteboard = NSPasteboard.general
         let previousContents = savePasteboard(pasteboard)
 
-        // Set text to clipboard
+        // 将文本写入剪贴板（Set text to clipboard）
         pasteboard.clearContents()
         pasteboard.setString(finalText, forType: .string)
 
-        // Check if current input source is CJK, switch to ASCII if needed
+        // 检查当前输入源是否为 CJK，如需要则切换到 ASCII（Check if current input source is CJK, switch to ASCII if needed）
         let originalSource = TISCopyCurrentKeyboardInputSource().takeRetainedValue()
         let needsSwitch = isCJKInputSource(originalSource)
         if needsSwitch {
             switchToASCIIInputSource()
         }
 
-        // Small delay for input source switch to take effect
+        // 短暂延迟，等待输入源切换生效（Small delay for input source switch to take effect）
         let delay = needsSwitch ? 0.05 : 0.02
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [self] in
-            // Simulate Cmd+V
+            // 模拟 Cmd+V 粘贴（Simulate Cmd+V paste）
             simulatePaste()
 
-            // Restore input source after paste
-            // 粘贴延迟：给目标 App（含 Electron 等慢应用）足够时间完成粘贴
+            // 粘贴后恢复输入源（Restore input source after paste）
+            // 粘贴延迟：给目标 App（含 Electron 等慢应用）足够时间完成粘贴（Paste delay: give target apps including Electron enough time to complete paste）
             let pasteDelay: Double = 0.25
             DispatchQueue.main.asyncAfter(deadline: .now() + pasteDelay) {
                 if needsSwitch {
                     TISSelectInputSource(originalSource)
                 }
-                // 再等一帧后恢复剪贴板，确保输入法恢复不影响粘贴
+                // 再等一帧后恢复剪贴板，确保输入法恢复不影响粘贴（Wait one more frame before restoring pasteboard, ensuring input method restoration doesn't affect paste）
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                     self.restorePasteboard(pasteboard, contents: previousContents)
                     completion?()
@@ -88,16 +88,16 @@ final class TextInjector {
 
     // MARK: - 光标标点检测
 
-    /// 获取当前聚焦输入框中光标后方的第一个字符
+    /// 获取当前聚焦输入框中光标后方的第一个字符（Get the first character after cursor in the currently focused text field）
     private func getCharacterAfterCursor() -> Character? {
         let systemWide = AXUIElementCreateSystemWide()
 
-        // 获取当前聚焦的 UI 元素
+        // 获取当前聚焦的 UI 元素（Get the currently focused UI element）
         var focused: CFTypeRef?
         let result = AXUIElementCopyAttributeValue(systemWide, kAXFocusedUIElementAttribute as CFString, &focused)
         guard result == .success, let focusedElement = focused else { return nil }
 
-        // 获取选区范围（光标位置）
+        // 获取选区范围（光标位置）（Get selection range / cursor position）
         var selectedRange: CFTypeRef?
         let rangeResult = AXUIElementCopyAttributeValue(focusedElement as! AXUIElement, kAXSelectedTextRangeAttribute as CFString, &selectedRange)
         guard rangeResult == .success, let range = selectedRange else { return nil }
@@ -105,12 +105,12 @@ final class TextInjector {
         var rangeValue = CFRange()
         AXValueGetValue(range as! AXValue, .cfRange, &rangeValue)
 
-        // 获取输入框文本内容
+        // 获取输入框文本内容（Get text field content）
         var value: CFTypeRef?
         let textResult = AXUIElementCopyAttributeValue(focusedElement as! AXUIElement, kAXValueAttribute as CFString, &value)
         guard textResult == .success, let text = value as? String else { return nil }
 
-        // 计算光标后方位置
+        // 计算光标后方位置（Calculate position after cursor）
         let nextIndex = rangeValue.location + rangeValue.length
         guard nextIndex >= 0, nextIndex < text.count else { return nil }
 
@@ -118,7 +118,7 @@ final class TextInjector {
         return text[index]
     }
 
-    /// 移除文本末尾的标点符号
+    /// 移除文本末尾的标点符号（Remove trailing punctuation from text）
     private func removeTrailingPunctuation(_ text: String) -> String {
         var trimmed = text
         while let last = trimmed.last, PunctuationProcessor.isSentenceEndingPunctuation(last) {
@@ -134,12 +134,12 @@ final class TextInjector {
         let sourceID = Unmanaged<CFString>.fromOpaque(idPtr).takeUnretainedValue() as String
 
         let cjkPatterns = [
-            "com.apple.inputmethod.SCIM",   // Simplified Chinese
-            "com.apple.inputmethod.TCIM",   // Traditional Chinese
-            "com.apple.inputmethod.Japanese",
-            "com.apple.inputmethod.Korean",
-            "com.apple.inputmethod.ChineseHandwriting",
-            "com.google.inputmethod.Japanese",
+            "com.apple.inputmethod.SCIM",   // 简体中文（Simplified Chinese）
+            "com.apple.inputmethod.TCIM",   // 繁体中文（Traditional Chinese）
+            "com.apple.inputmethod.Japanese",// 日文（Japanese）
+            "com.apple.inputmethod.Korean",  // 韩文（Korean）
+            "com.apple.inputmethod.ChineseHandwriting",// 中文手写（Chinese Handwriting）
+            "com.google.inputmethod.Japanese",// 日文（Japanese）
             "com.sogou.inputmethod",
             "com.baidu.inputmethod",
             "com.tencent.inputmethod",
@@ -158,7 +158,7 @@ final class TextInjector {
             return
         }
 
-        // Prefer ABC or US keyboard
+        // 优先选择 ABC 或 US 键盘布局（Prefer ABC or US keyboard layout）
         let preferred = ["com.apple.keylayout.ABC", "com.apple.keylayout.US"]
         for prefID in preferred {
             if let source = sources.first(where: { source in
@@ -171,7 +171,7 @@ final class TextInjector {
             }
         }
 
-        // Fallback: select first ASCII-capable source
+        // 回退：选择第一个可用的 ASCII 输入源（Fallback: select first ASCII-capable source）
         if let first = sources.first {
             TISSelectInputSource(first)
         }
@@ -179,7 +179,7 @@ final class TextInjector {
 
     private func simulatePaste() {
         let source = CGEventSource(stateID: .combinedSessionState)
-        let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 0x09, keyDown: true)  // V key
+        let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 0x09, keyDown: true)  // V 键（V key）
         let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 0x09, keyDown: false)
         keyDown?.flags = .maskCommand
         keyUp?.flags = .maskCommand

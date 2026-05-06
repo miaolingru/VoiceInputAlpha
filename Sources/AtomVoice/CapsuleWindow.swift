@@ -9,7 +9,7 @@ final class CapsuleWindowController {
     private var animationSurfaceView: NSView?
     private var springTimer: Timer?
     private var shimmerLayer: CAGradientLayer?
-    private var shimmerClipLayer: CALayer?  // 裁剪为胶囊形状的容器层
+    private var shimmerClipLayer: CALayer?  // 裁剪为胶囊形状的容器层（Clipping container layer shaped as capsule）
     private var activeAnimationInset: CGFloat = 0
     private var waveformVisible = true
 
@@ -34,7 +34,7 @@ final class CapsuleWindowController {
     private let spotlightInBlurRadius: CGFloat = 14
     private let spotlightOutBlurRadius: CGFloat = 10
 
-    // Spotlight 式弹性动效参数，根据菜单速度动态读取
+    // Spotlight 式弹性动效参数，根据菜单速度动态读取（Spotlight-style spring animation parameters, dynamically read from menu speed）
     private var spotlightMotion: (inScale: CGFloat, overshootScale: CGFloat, settleScale: CGFloat, outScale: CGFloat, fadeIn: TimeInterval, fadeOut: TimeInterval, blurIn: TimeInterval, scaleIn: TimeInterval, scaleOut: TimeInterval) {
         switch UserDefaults.standard.string(forKey: "animationSpeed") ?? "medium" {
         case "slow": return (0.72, 1.045, 0.985, 0.92, 0.08, 0.14, 0.18, 0.34, 0.14)
@@ -79,7 +79,7 @@ final class CapsuleWindowController {
 
     func show(showRecordingTimer: Bool = true) {
         if panel != nil {
-            // 上一次 showError 的 3 秒延迟尚未结束时重新录音，先清理旧面板
+            // 上一次 showError 的 3 秒延迟尚未结束时重新录音，先清理旧面板（Previous showError 3s delay hasn't ended when re-recording, clean up old panel first）
             cleanup()
         }
 
@@ -100,7 +100,7 @@ final class CapsuleWindowController {
         )
         panel.isOpaque = false
         panel.backgroundColor = .clear
-        panel.hasShadow = true   // 使用系统窗口阴影，边缘响应交给 NSGlassEffectView
+        panel.hasShadow = true   // 使用系统窗口阴影，边缘响应交给 NSGlassEffectView（Use system window shadow, edge response handled by NSGlassEffectView）
         panel.level = .floating
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.isMovableByWindowBackground = false
@@ -149,7 +149,7 @@ final class CapsuleWindowController {
             glass.tintColor = NSColor.windowBackgroundColor.withAlphaComponent(0.065)
             glass.translatesAutoresizingMaskIntoConstraints = false
             glass.contentView = container
-            // none 模式下禁用 glass view 自带的隐式入场动画
+            // none 模式下禁用 glass view 自带的隐式入场动画（Disable glass view's implicit entry animation in none mode）
             if animationStyle == "none" {
                 CATransaction.begin()
                 CATransaction.setDisableActions(true)
@@ -212,7 +212,7 @@ final class CapsuleWindowController {
 
         #if DEBUG_BUILD
         if showRecordingTimer {
-            // 计时器标签：仅录音调试时显示，下载等状态胶囊不显示。
+            // 计时器标签：仅录音调试时显示，下载等状态胶囊不显示（Timer label: only shown during recording debug, not shown for download/status capsule）
             let timerLbl = NSTextField(labelWithString: "0s")
             timerLbl.translatesAutoresizingMaskIntoConstraints = false
             timerLbl.font = .monospacedDigitSystemFont(ofSize: 11, weight: .regular)
@@ -387,7 +387,7 @@ final class CapsuleWindowController {
         panel.orderFrontRegardless()
         panel.invalidateShadow()
 
-        // 延迟一帧，让 glass/effect view 先采样背景，避免首帧白色 fallback。
+        // 延迟一帧，让 glass/effect view 先采样背景，避免首帧白色 fallback（Delay one frame for glass/effect view to sample background, avoid white fallback on first frame）
         DispatchQueue.main.async { [weak self, weak panel] in
             guard let self, let panel, self.panel === panel else { return }
             if self.waveformVisible {
@@ -448,7 +448,7 @@ final class CapsuleWindowController {
     // MARK: - 无动画入场
 
     private func animateInNone(panel: NSPanel, targetFrame: NSRect) {
-        // 清空任何残留 filter
+        // 清空任何残留 filter（Clear any residual filters）
         contentView?.layer?.filters = nil
         contentView?.layer?.removeAllAnimations()
         contentView?.alphaValue = 1
@@ -463,7 +463,7 @@ final class CapsuleWindowController {
         layoutAnimationSurface(in: panel)
         panel.alphaValue = 1
 
-        // 三重禁用：CATransaction + NSAnimationContext + animator duration
+        // 三重禁用：CATransaction + NSAnimationContext + animator duration（Triple disable: CATransaction + NSAnimationContext + animator duration）
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         CATransaction.setAnimationDuration(0)
@@ -471,7 +471,7 @@ final class CapsuleWindowController {
         NSAnimationContext.current.duration = 0
         NSAnimationContext.current.allowsImplicitAnimation = false
         panel.orderFrontRegardless()
-        // 强制立即渲染，不等下一 runloop
+        // 强制立即渲染，不等下一 runloop（Force immediate render, don't wait for next runloop）
         panel.display()
         NSAnimationContext.endGrouping()
         CATransaction.commit()
@@ -506,7 +506,7 @@ final class CapsuleWindowController {
         animationSurfaceView?.layer?.transform = CATransform3DMakeScale(0.92, 0.92, 1.0)
         panel.orderFrontRegardless()
 
-        // 延迟一帧，让 visual effect view 先采样背景
+        // 延迟一帧，让 visual effect view 先采样背景（Delay one frame for visual effect view to sample background）
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             if self.waveformVisible {
@@ -534,7 +534,7 @@ final class CapsuleWindowController {
         waveformView?.updateBands(bands)
     }
 
-    /// 下载等不需要波形的场景调用
+    /// 下载等不需要波形的场景调用（Called for scenarios like downloads that don't need waveform）
     func hideWaveform() {
         waveformVisible = false
         waveformView?.stopAnimating()
@@ -549,7 +549,7 @@ final class CapsuleWindowController {
 
     func updateText(_ text: String, completion: (() -> Void)? = nil) {
         guard let label = textLabel, let panel = panel else { completion?(); return }
-        // 确保文字颜色恢复为默认（showError 会改为红色）
+        // 确保文字颜色恢复为默认（showError 会改为红色）（Ensure text color resets to default — showError changes it to red）
         label.textColor = .labelColor
         label.stringValue = text
         label.isHidden = false
@@ -583,7 +583,7 @@ final class CapsuleWindowController {
         refiningLabel?.isHidden = true
         textLabel?.isHidden = false
         if hidesWaveform { hideWaveform() }
-        // 等 panel 宽度动画结束后再应用扫光，确保 clipLayer 与胶囊实际宽度一致
+        // 等 panel 宽度动画结束后再应用扫光，确保 clipLayer 与胶囊实际宽度一致（Wait for panel width animation to finish before applying shimmer, ensuring clipLayer matches actual capsule width）
         updateText(text) { [weak self] in
             self?.applyShimmerToCapsule()
         }
@@ -596,13 +596,13 @@ final class CapsuleWindowController {
         showWaveform()
     }
 
-    /// 显示错误提示，一段时间后自动消失。
+    /// 显示错误提示，一段时间后自动消失。（Show error message, auto-dismiss after a delay.）
     func showError(_ message: String, dismissAfter delay: TimeInterval = 3) {
         stopShimmer()
         refiningLabel?.isHidden = true
         textLabel?.isHidden = false
         updateText("⚠️ \(message)")
-        // 在 updateText 之后设置红色（updateText 会重置为默认颜色）
+        // 在 updateText 之后设置红色（updateText 会重置为默认颜色）（Set red color after updateText — updateText resets to default color）
         textLabel?.textColor = .systemRed
 
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
@@ -617,9 +617,9 @@ final class CapsuleWindowController {
         applyShimmerToCapsule()
     }
 
-    // MARK: - 全胶囊扫光（仿 iOS 滑动解锁）
-    // 用一个 clipLayer（有 cornerRadius + masksToBounds）套住 shimmer 光带
-    // 无论底层是 NSGlassEffectView 还是 NSVisualEffectView，都能精确裁剪为胶囊轮廓
+    // MARK: - 全胶囊扫光，仿 iOS 滑动解锁（Full-capsule shimmer, iOS slide-to-unlock style）
+    // 用一个 clipLayer（有 cornerRadius + masksToBounds）套住 shimmer 光带（Use a clipLayer with cornerRadius + masksToBounds to wrap the shimmer band）
+    // 无论底层是 NSGlassEffectView 还是 NSVisualEffectView，都能精确裁剪为胶囊轮廓（Precisely clips to capsule outline regardless of whether the underlying view is NSGlassEffectView or NSVisualEffectView）
 
     private func applyShimmerToCapsule() {
         guard let cv = animationSurfaceView ?? panel?.contentView else { return }
@@ -629,14 +629,14 @@ final class CapsuleWindowController {
         let capsuleW = cv.bounds.width
         let bandW: CGFloat = capsuleW * 0.55
 
-        // clipLayer：与胶囊完全重叠，masksToBounds 裁剪子层为胶囊形状
+        // clipLayer：与胶囊完全重叠，masksToBounds 裁剪子层为胶囊形状（clipLayer: exactly overlaps capsule, masksToBounds clips sublayers to capsule shape）
         let clip = CALayer()
         clip.frame = CGRect(x: 0, y: 0, width: capsuleW, height: capsuleHeight)
         clip.cornerRadius = cornerRadius
         clip.cornerCurve  = .continuous
         clip.masksToBounds = true
 
-        // shimmer 光带：中心高光，两端透明
+        // shimmer 光带：中心高光，两端透明（Shimmer band: center highlight, transparent at both ends）
         let sl = CAGradientLayer()
         sl.frame = CGRect(x: -bandW, y: 0, width: bandW, height: capsuleHeight)
         sl.startPoint = CGPoint(x: 0, y: 0.5)
@@ -648,7 +648,7 @@ final class CapsuleWindowController {
         ]
         sl.locations = [0.0, 0.5, 1.0] as [NSNumber]
 
-        // position.x 动画：光带从左侧外扫入，扫出右侧，1.6s 循环
+        // position.x 动画：光带从左侧外扫入，扫出右侧，1.6s 循环（position.x animation: band sweeps in from left, out to right, 1.6s loop）
         let anim = CABasicAnimation(keyPath: "position.x")
         anim.fromValue   = -bandW / 2
         anim.toValue     = capsuleW + bandW / 2

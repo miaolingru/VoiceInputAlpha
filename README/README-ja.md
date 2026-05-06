@@ -7,7 +7,7 @@
 <h3 align="center">押して、話す。</h3>
 <p align="center">軽量・プライバシー優先の音声ディクテーション。文字はそのまま任意の Mac アプリに入力され、録音時間に制限はありません。</p>
 
-![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![Swift](https://img.shields.io/badge/Swift-5.9-orange) ![License](https://img.shields.io/badge/license-MIT-green)
+
 
 ---
 
