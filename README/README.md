@@ -41,6 +41,13 @@ All speech recognition runs **on-device** via Apple's Speech Recognition framewo
 
 Download from [Releases](https://github.com/BlackSquarre/AtomVoice/releases), unzip, drag to Applications.
 
+**Homebrew**
+
+```bash
+brew tap BlackSquarre/tap
+brew install --cask atomvoice
+```
+
 **Build from source**
 
 ```bash
@@ -70,16 +77,6 @@ Ad-hoc signed (not notarized). On first open:
 Menu bar → **LLM Refinement** → **Settings** — select a provider preset or add your own, enter API key and model name.
 
 Built-in presets: OpenAI / DeepSeek / Moonshot (Kimi) / Qwen / GLM / Yi / Groq / Ollama (local)
-
-## Build Commands
-
-```bash
-make build    # Build .app bundle
-make run      # Build and launch
-make install  # Install to /Applications
-make release  # Build Universal + AppleSilicon + Intel packages
-make clean    # Clean build artifacts
-```
 
 ## License
 
