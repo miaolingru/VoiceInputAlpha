@@ -15,7 +15,12 @@ jobs:
       - name: Get release info
         id: release
         run: |
-          VERSION="${GITHUB_REF#refs/tags/v}"
+          # 从 release 事件获取版本，或从最新 release 获取
+          if [ "${{ github.event_name }}" = "release" ]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            VERSION=$(gh release view --repo ${{ github.repository }} --json tagName -q .tagName | sed 's/^v//')
+          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           
           # 下载 Universal zip
@@ -26,6 +31,8 @@ jobs:
           SHA256=$(shasum -a 256 /tmp/AtomVoice.zip | cut -d' ' -f1)
           echo "sha256=$SHA256" >> $GITHUB_OUTPUT
           echo "download_url=$DOWNLOAD_URL" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Checkout homebrew-tap
         uses: actions/checkout@v4
@@ -44,7 +51,7 @@ jobs:
             version "${VERSION}"
             sha256 "${SHA256}"
 
-            url "https://github.com/BlackSquarre/AtomVoice/releases/download/v\${VERSION}/AtomVoice-\${VERSION}-Universal.zip"
+            url "https://github.com/BlackSquarre/AtomVoice/releases/download/v${VERSION}/AtomVoice-${VERSION}-Universal.zip"
             name "AtomVoice"
             desc "macOS menu bar voice input tool - press Fn to record, release to inject text"
             homepage "https://github.com/BlackSquarre/AtomVoice"
