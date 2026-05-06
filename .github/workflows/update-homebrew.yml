@@ -19,7 +19,7 @@ jobs:
           if [ "${{ github.event_name }}" = "release" ]; then
             VERSION="${GITHUB_REF#refs/tags/v}"
           else
-            VERSION=$(gh release view --repo ${{ github.repository }} --json tagName -q .tagName | sed 's/^v//')
+            VERSION=$(gh release list --repo ${{ github.repository }} --limit 1 --json tagName -q '.[0].tagName' | sed 's/^v//')
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           
