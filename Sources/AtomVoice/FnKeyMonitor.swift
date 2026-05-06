@@ -29,7 +29,7 @@ final class FnKeyMonitor {
 
     // 录音期间的按键回调
     var onEscPressed: (() -> Void)?         // ESC 取消录音
-    var onImmediateStop: (() -> Void)?      // Space/Backspace 立即上屏
+    var onImmediateStop: ((String?) -> Void)?  // Space/Backspace/标点立即上屏
     var isRecording = false                  // 由 AppDelegate 设置
 
     // 当前触发键（可运行时修改，修改后自动重置按下状态）
@@ -160,11 +160,18 @@ final class FnKeyMonitor {
                 case FnKeyMonitor.spaceKeyCode, FnKeyMonitor.backspaceKeyCode:
                     print("[FnKeyMonitor] >>> Space/Backspace 立即上屏")
                     DispatchQueue.main.async { [weak self] in
-                        self?.onImmediateStop?()
+                        self?.onImmediateStop?(nil)
                     }
                     return nil
 
                 default:
+                    if let punctuation = typedPunctuation(from: event) {
+                        print("[FnKeyMonitor] >>> 标点立即上屏: \(punctuation)")
+                        DispatchQueue.main.async { [weak self] in
+                            self?.onImmediateStop?(punctuation)
+                        }
+                        return nil
+                    }
                     break
                 }
             }
@@ -219,5 +226,14 @@ final class FnKeyMonitor {
         }
 
         return Unmanaged.passUnretained(event)
+    }
+
+    private func typedPunctuation(from event: CGEvent) -> String? {
+        let blockedModifiers: CGEventFlags = [.maskCommand, .maskControl]
+        guard event.flags.intersection(blockedModifiers).isEmpty else { return nil }
+        guard event.getIntegerValueField(.keyboardEventAutorepeat) == 0 else { return nil }
+        guard let nsEvent = NSEvent(cgEvent: event), let characters = nsEvent.characters, !characters.isEmpty else { return nil }
+        guard characters.allSatisfy({ PunctuationProcessor.isUserTypedPunctuation($0) }) else { return nil }
+        return characters
     }
 }

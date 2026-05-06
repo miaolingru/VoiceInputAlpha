@@ -105,7 +105,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // ESC 取消录音（不上屏）
         fnKeyMonitor.onEscPressed = { [weak self] in self?.cancelRecording() }
         // Space/Backspace 立即上屏（跳过 LLM）
-        fnKeyMonitor.onImmediateStop = { [weak self] in self?.stopRecordingImmediate() }
+        fnKeyMonitor.onImmediateStop = { [weak self] punctuation in
+            self?.stopRecordingImmediate(appending: punctuation)
+        }
         fnKeyMonitor.start()
 
         // 启动 5 秒后静默检查更新（不阻塞启动流程）
@@ -549,6 +551,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return PunctuationProcessor.process(rawText, language: lang)
     }
 
+    private func removingTrailingSentencePunctuation(from text: String) -> String {
+        var result = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        while let last = result.last, PunctuationProcessor.isSentenceEndingPunctuation(last) {
+            result.removeLast()
+        }
+        return result
+    }
+
     // MARK: - Sherpa 模型下载
 
     @discardableResult
@@ -641,8 +651,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Space/Backspace 立即上屏：停止录音，跳过 LLM，直接注入
-    private func stopRecordingImmediate() {
+    /// Space/Backspace/标点立即上屏：停止录音，跳过 LLM，直接注入
+    private func stopRecordingImmediate(appending punctuation: String? = nil) {
         guard isRecording else { return }
         isRecording = false
         fnKeyMonitor.isRecording = false
@@ -655,16 +665,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let rawText = remainingTextAfterLiveInsertion(recognizedText)
 
             if rawText.isEmpty {
-                capsuleWindow.dismiss()
+                capsuleWindow.dismiss { [self] in
+                    if let punctuation, !punctuation.isEmpty {
+                        textInjector.inject(text: punctuation)
+                    }
+                }
                 return
             }
 
             // 本地自动标点（保留），但跳过 LLM
             let processedText = applyAutoPunctuation(to: rawText)
+            let finalText = textByAppendingImmediatePunctuation(punctuation, to: processedText)
 
             capsuleWindow.dismiss { [self] in
-                textInjector.inject(text: processedText)
+                textInjector.inject(text: finalText)
             }
         }
+    }
+
+    private func textByAppendingImmediatePunctuation(_ punctuation: String?, to text: String) -> String {
+        guard let punctuation, !punctuation.isEmpty else { return text }
+        return removingTrailingSentencePunctuation(from: text) + punctuation
     }
 }

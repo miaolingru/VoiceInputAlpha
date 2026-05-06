@@ -257,4 +257,11 @@ struct PunctuationProcessor {
         ]
         return endings.contains(char)
     }
+
+    static func isUserTypedPunctuation(_ char: Character) -> Bool {
+        if isSentenceEndingPunctuation(char) { return true }
+        return char.unicodeScalars.allSatisfy { scalar in
+            CharacterSet.punctuationCharacters.contains(scalar)
+        }
+    }
 }

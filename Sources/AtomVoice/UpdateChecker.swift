@@ -408,32 +408,81 @@ final class UpdateChecker: NSObject {
         AppDelegate.runModalAlert(alert)
     }
 
-    /// 将版本字符串拆分为基础版本号和 pre-release 标签
-    /// 例："0.9.5-beta.1" → ("0.9.5", "beta.1")；"0.9.5" → ("0.9.5", nil)
-    private func splitPreRelease(_ version: String) -> (base: String, preRelease: String?) {
-        let s = version.hasPrefix("v") ? String(version.dropFirst()) : version
-        if let idx = s.firstIndex(of: "-") {
-            return (String(s[..<idx]), String(s[s.index(after: idx)...]))
-        }
-        return (s, nil)
+    private struct ParsedVersion {
+        let numbers: [Int]
+        let preRelease: [String]?
     }
 
-    /// 比较两个版本号（支持 pre-release 格式，如 0.9.5-beta.1）
-    /// 规则：基础版本号更大 → 更新；基础相同时 stable > pre-release
+    /// 解析版本号，兼容 GitHub tag 的 "0.10.1-Beta-2" 和 Info.plist 的 "0.10.1 Beta 2"。
+    private func parseVersion(_ version: String) -> ParsedVersion {
+        var normalized = version.trimmingCharacters(in: .whitespacesAndNewlines)
+        if normalized.lowercased().hasPrefix("v") {
+            normalized.removeFirst()
+        }
+
+        var base = ""
+        var suffix = ""
+        var hasReachedSuffix = false
+        for char in normalized {
+            if !hasReachedSuffix, char.isNumber || char == "." {
+                base.append(char)
+            } else {
+                hasReachedSuffix = true
+                suffix.append(char)
+            }
+        }
+
+        let numbers = base.split(separator: ".").map { Int($0) ?? 0 }
+        let preRelease = suffix
+            .lowercased()
+            .split { $0 == " " || $0 == "-" || $0 == "." || $0 == "_" }
+            .map(String.init)
+        return ParsedVersion(numbers: numbers, preRelease: preRelease.isEmpty ? nil : preRelease)
+    }
+
+    /// 比较两个版本号（支持 pre-release 格式，如 0.9.5-beta.1 / 0.9.5 Beta 1）
+    /// 规则：基础版本号更大 → 更新；基础相同时 stable > pre-release；pre-release 按标识符比较。
     private func isNewer(_ version: String, than current: String) -> Bool {
-        let (vBase, vPre) = splitPreRelease(version)
-        let (cBase, cPre) = splitPreRelease(current)
-        let v = vBase.split(separator: ".").compactMap { Int($0) }
-        let c = cBase.split(separator: ".").compactMap { Int($0) }
-        for i in 0..<max(v.count, c.count) {
-            let vi = i < v.count ? v[i] : 0
-            let ci = i < c.count ? c[i] : 0
+        let version = parseVersion(version)
+        let current = parseVersion(current)
+
+        for i in 0..<max(version.numbers.count, current.numbers.count) {
+            let vi = i < version.numbers.count ? version.numbers[i] : 0
+            let ci = i < current.numbers.count ? current.numbers[i] : 0
             if vi != ci { return vi > ci }
         }
-        // 基础版本号相同：stable 比 pre-release 新；pre-release 比 stable 旧
-        if cPre != nil && vPre == nil { return true }
-        if cPre == nil && vPre != nil { return false }
-        return false
+
+        switch (version.preRelease, current.preRelease) {
+        case (nil, nil):
+            return false
+        case (nil, .some):
+            return true
+        case (.some, nil):
+            return false
+        case let (.some(lhs), .some(rhs)):
+            return comparePreRelease(lhs, rhs) == .orderedDescending
+        }
+    }
+
+    private func comparePreRelease(_ lhs: [String], _ rhs: [String]) -> ComparisonResult {
+        for i in 0..<max(lhs.count, rhs.count) {
+            guard i < lhs.count else { return .orderedAscending }
+            guard i < rhs.count else { return .orderedDescending }
+
+            let left = lhs[i]
+            let right = rhs[i]
+            if left == right { continue }
+
+            if let leftNumber = Int(left), let rightNumber = Int(right) {
+                return leftNumber < rightNumber ? .orderedAscending : .orderedDescending
+            }
+            if Int(left) != nil { return .orderedAscending }
+            if Int(right) != nil { return .orderedDescending }
+
+            let result = left.compare(right, options: [.numeric, .caseInsensitive])
+            if result != .orderedSame { return result }
+        }
+        return .orderedSame
     }
 
     private enum UpdateError: LocalizedError {
