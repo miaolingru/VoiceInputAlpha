@@ -61,6 +61,13 @@ Small app bundle, near-zero CPU when idle, no background daemons. Sherpa models 
 
 Download from [Releases](https://github.com/BlackSquarre/AtomVoice/releases), unzip, drag to Applications. Three architectures are published per release: Universal / Apple Silicon / Intel.
 
+**Homebrew**
+
+```bash
+brew tap BlackSquarre/tap
+brew install --cask atomvoice
+```
+
 **Build from source**
 
 ```bash
@@ -96,16 +103,6 @@ Menu bar → **LLM Refinement** → **Settings** — pick a provider preset or a
 Built-in presets: **OpenAI** / **Anthropic** / DeepSeek / Moonshot (Kimi) / Qwen / GLM / Yi / Groq / **Ollama (local)** / Custom.
 
 The default system prompt is tuned for dictation polish (fix homophones, mis-transcribed product/API names, fillers, punctuation) and switches automatically by recognition language. You can override it with your own prompt.
-
-## Build Commands
-
-```bash
-make dev      # Debug build with DEBUG_BUILD flag, installed to dist/Test/
-make run      # Build and launch (current arch, debug)
-make install  # Install to /Applications
-make release  # Build Universal + Apple Silicon + Intel zips into dist/
-make clean    # Clean build artifacts
-```
 
 ## License
 
