@@ -104,16 +104,6 @@ make install
 
 デフォルトの system prompt はディクテーション後の整形向けに調整(同音異義語、誤認識された製品名・API 名、フィラー、句読点を修正)され、認識言語に応じて自動切替。独自の prompt で上書きも可能です。
 
-## ビルドコマンド
-
-```bash
-make dev      # DEBUG_BUILD フラグ付き、dist/Test/ にインストール
-make run      # ビルドして起動(現在のアーキテクチャ、debug)
-make install  # /Applications にインストール
-make release  # dist/ に Universal + Apple Silicon + Intel の zip を生成
-make clean    # ビルド成果物をクリア
-```
-
 ## License
 
 MIT

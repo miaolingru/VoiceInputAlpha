@@ -104,16 +104,6 @@ make install
 
 預設 system prompt 針對口述潤色專門調校(修復同音字、錯認的產品名/API 名、口頭禪、標點),並根據辨識語言自動切換。也可以填自己的 prompt 覆寫。
 
-## 建置指令
-
-```bash
-make dev      # Debug 建置,帶 DEBUG_BUILD 標記,安裝到 dist/Test/
-make run      # 建置並啟動(當前架構,debug)
-make install  # 安裝到 /Applications
-make release  # 建置 Universal + Apple Silicon + Intel 三個 zip 到 dist/
-make clean    # 清理建置產物
-```
-
 ## License
 
 MIT

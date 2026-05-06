@@ -104,16 +104,6 @@ make install
 
 기본 system prompt는 받아쓰기 다듬기에 맞춰 조정(동음이의어, 잘못 인식된 제품명/API 이름, 군더더기, 문장 부호 수정)되며 인식 언어에 따라 자동 전환됩니다. 자신의 prompt로 덮어쓸 수도 있습니다.
 
-## 빌드 명령
-
-```bash
-make dev      # DEBUG_BUILD 플래그 포함, dist/Test/에 설치
-make run      # 빌드 후 실행(현재 아키텍처, debug)
-make install  # /Applications에 설치
-make release  # dist/에 Universal + Apple Silicon + Intel zip 생성
-make clean    # 빌드 산출물 정리
-```
-
 ## License
 
 MIT

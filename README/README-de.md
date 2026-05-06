@@ -104,16 +104,6 @@ Eingebaute Presets: **OpenAI** / **Anthropic** / DeepSeek / Moonshot (Kimi) / Qw
 
 Der Standard-System-Prompt ist auf Diktat-Politur abgestimmt (Homophone, falsch erkannte Produkt-/API-Namen, Füllwörter, Satzzeichen) und wechselt automatisch je nach Erkennungssprache. Du kannst ihn mit deinem eigenen Prompt überschreiben.
 
-## Build-Befehle
-
-```bash
-make dev      # Debug-Build mit DEBUG_BUILD, installiert nach dist/Test/
-make run      # Build und Start (aktuelle Architektur, debug)
-make install  # In /Applications installieren
-make release  # Universal + Apple Silicon + Intel Zips in dist/ erzeugen
-make clean    # Build-Artefakte aufräumen
-```
-
 ## License
 
 MIT

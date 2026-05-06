@@ -104,16 +104,6 @@ Préréglages intégrés : **OpenAI** / **Anthropic** / DeepSeek / Moonshot (Kim
 
 Le system prompt par défaut est ajusté pour le polissage de dictée (homophones, noms de produits/APIs mal transcrits, mots de remplissage, ponctuation) et bascule automatiquement selon la langue de reconnaissance. Tu peux le remplacer par le tien.
 
-## Commandes de build
-
-```bash
-make dev      # Build de debug avec DEBUG_BUILD, installé dans dist/Test/
-make run      # Build et lancement (architecture courante, debug)
-make install  # Installer dans /Applications
-make release  # Génère les zips Universal + Apple Silicon + Intel dans dist/
-make clean    # Nettoie les artefacts de build
-```
-
 ## License
 
 MIT

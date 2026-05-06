@@ -104,16 +104,6 @@ Predefinidos integrados: **OpenAI** / **Anthropic** / DeepSeek / Moonshot (Kimi)
 
 El system prompt por defecto está afinado para pulir dictado (corregir homófonos, nombres de productos/APIs mal transcritos, muletillas, puntuación) y cambia automáticamente según el idioma de reconocimiento. Puedes sobrescribirlo con tu propio prompt.
 
-## Comandos de compilación
-
-```bash
-make dev      # Build de debug con DEBUG_BUILD, instalado en dist/Test/
-make run      # Build y lanzamiento (arquitectura actual, debug)
-make install  # Instalar en /Applications
-make release  # Genera zips Universal + Apple Silicon + Intel en dist/
-make clean    # Limpia artefactos de build
-```
-
 ## License
 
 MIT
