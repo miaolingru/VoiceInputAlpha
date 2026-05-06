@@ -23,8 +23,13 @@ jobs:
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           
+          # 文件名中的版本号：空格替换为点号
+          FILE_VERSION="${VERSION// /-}"
+          FILE_VERSION="${FILE_VERSION//-/.}"
+          echo "file_version=$FILE_VERSION" >> $GITHUB_OUTPUT
+          
           # 下载 Universal zip
-          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/v${VERSION}/AtomVoice-${VERSION}-Universal.zip"
+          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/v${VERSION}/AtomVoice-${FILE_VERSION}-Universal.zip"
           curl -L -o /tmp/AtomVoice.zip "$DOWNLOAD_URL"
           
           # 计算 SHA256
@@ -44,6 +49,7 @@ jobs:
       - name: Update cask file
         run: |
           VERSION="${{ steps.release.outputs.version }}"
+          FILE_VERSION="${{ steps.release.outputs.file_version }}"
           SHA256="${{ steps.release.outputs.sha256 }}"
           
           cat > homebrew-tap/Casks/atomvoice.rb << EOF
@@ -51,7 +57,7 @@ jobs:
             version "${VERSION}"
             sha256 "${SHA256}"
 
-            url "https://github.com/BlackSquarre/AtomVoice/releases/download/v${VERSION}/AtomVoice-${VERSION}-Universal.zip"
+            url "https://github.com/BlackSquarre/AtomVoice/releases/download/v${VERSION}/AtomVoice-${FILE_VERSION}-Universal.zip"
             name "AtomVoice"
             desc "macOS menu bar voice input tool - press Fn to record, release to inject text"
             homepage "https://github.com/BlackSquarre/AtomVoice"
