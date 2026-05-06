@@ -4,7 +4,7 @@
 
 <p align="center"><img src="README/AppIcon-1024.png" width="128"></p>
 
-A lightweight macOS menu bar voice input app. Hold **Fn** to record, release to inject transcribed text into any focused input field.
+Press, speak. — lightweight, privacy-first voice dictation that types into any Mac app, with no time limit.
 
 ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![Swift](https://img.shields.io/badge/Swift-5.9-orange) ![License](https://img.shields.io/badge/license-MIT-green)
 
