@@ -1,6 +1,6 @@
 [English](../README.md) | **简体中文** | [繁體中文](README-zh-Hant.md) | [日本語](README-ja.md) | [한국어](README-ko.md) | [Español](README-es.md) | [Français](README-fr.md) | [Deutsch](README-de.md)
 
-# AtomVoice（原子微语）
+# 原子微语（AtomVoice）
 
 <p align="center"><img src="AppIcon-1024.png" width="128"></p>
 
