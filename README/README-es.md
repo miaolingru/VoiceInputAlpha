@@ -4,7 +4,8 @@
 
 <p align="center"><img src="AppIcon-1024.png" width="128"></p>
 
-Pulsa, habla. — dictado por voz ligero y centrado en la privacidad, que escribe en cualquier app de tu Mac, sin límite de tiempo.
+<h3 align="center">Pulsa, habla.</h3>
+<p align="center">Dictado por voz ligero y centrado en la privacidad, que escribe en cualquier app de tu Mac, sin límite de tiempo.</p>
 
 ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![Swift](https://img.shields.io/badge/Swift-5.9-orange) ![License](https://img.shields.io/badge/license-MIT-green)
 
