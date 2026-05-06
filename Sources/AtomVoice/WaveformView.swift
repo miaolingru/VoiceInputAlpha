@@ -9,9 +9,9 @@ final class WaveformView: NSView {
     private let maxBarHeight: CGFloat = 26.0
 
     // MARK: - 正弦波参数
-    // 低频竖条（左）振荡慢，高频竖条（右）振荡快，与音频频段特性一致
-    private let oscFreqs: [CGFloat]  = [1.4, 2.2, 3.1, 4.6, 6.3]   // rad/s，从慢到快
-    private let initPhases: [CGFloat] = [0.0, 1.1, 2.3, 0.5, 3.0]  // 初始相位错开
+    // 仅提供缓慢微动，不再让高频细节造成碎跳。
+    private let oscFreqs: [CGFloat]  = [2.8, 3.4, 3.9, 3.2, 2.6]
+    private let initPhases: [CGFloat] = [0.0, 2.1, 0.8, 2.9, 1.4]
 
     // MARK: - 状态
     private var bandLevels: [CGFloat] = [0, 0, 0, 0, 0]   // 来自 FFT 的 5 个频段能量
@@ -24,11 +24,12 @@ final class WaveformView: NSView {
 
     // MARK: - 响应速度
     // attack 快（说话时立刻响应），release 慢（有余韵感）
-    private let attackCoeff:  CGFloat = 0.80   // 快速上升
-    private let releaseCoeff: CGFloat = 0.12   // 缓慢下降
+    private let attackCoeff:  CGFloat = 0.86   // 开口时马上响应
+    private let releaseCoeff: CGFloat = 0.12   // 回落慢一点，保留阻尼和余韵
+    private let levelDeadband: CGFloat = 0.025  // 吃掉小幅抖动，避免细碎弹跳
 
     // 待机呼吸幅度（无声时轻微摆动）
-    private let idleAmplitude: CGFloat = 0.05
+    private let idleAmplitude: CGFloat = 0.03
 
     // MARK: - Init
 
@@ -36,7 +37,6 @@ final class WaveformView: NSView {
         barHeights = Array(repeating: 3.0, count: 5)
         super.init(frame: frame)
         wantsLayer = true
-        startAnimating()
     }
 
     required init?(coder: NSCoder) {
@@ -51,7 +51,7 @@ final class WaveformView: NSView {
     /// 接收来自 AudioEngine FFT 的 5 频段能量（0-1）
     func updateBands(_ bands: [Float]) {
         for i in 0..<min(bands.count, barCount) {
-            let target = CGFloat(bands[i])
+            let target = filteredLevel(CGFloat(bands[i]), current: bandLevels[i])
             let current = bandLevels[i]
             if target > current {
                 bandLevels[i] += (target - current) * attackCoeff
@@ -66,10 +66,11 @@ final class WaveformView: NSView {
         let level = CGFloat(rms)
         for i in 0..<barCount {
             let current = bandLevels[i]
-            if level > current {
-                bandLevels[i] += (level - current) * attackCoeff
+            let target = filteredLevel(level, current: current)
+            if target > current {
+                bandLevels[i] += (target - current) * attackCoeff
             } else {
-                bandLevels[i] += (level - current) * releaseCoeff
+                bandLevels[i] += (target - current) * releaseCoeff
             }
         }
     }
@@ -108,23 +109,30 @@ final class WaveformView: NSView {
         displayTime += dt
 
         for i in 0..<barCount {
-            // 正弦波产生有机摆动
+            // 正弦波只做轻微调制，真实音量决定主体高度。
             let sine = sin(displayTime * oscFreqs[i] + initPhases[i])  // -1…1
             let level = bandLevels[i]
 
-            // 振幅 = 实际频段能量 + 待机呼吸
-            // 高度 = 基础 + 振幅 * (0.5 + 0.5*sine) 使高度始终 ≥ 基础
-            let amplitude = level + idleAmplitude
-            let normalized = amplitude * (0.5 + 0.5 * sine)
+            let pulse = 0.97 + 0.03 * sine
+            let quietness = max(0, 1 - level * 5)
+            let idle = idleAmplitude * quietness * (0.5 + 0.5 * sine)
+            let normalized = min(1, level * pulse + idle)
             let targetHeight = minBarHeight + (maxBarHeight - minBarHeight) * normalized
 
             // 竖条高度平滑追踪目标
-            let coeff: CGFloat = targetHeight > barHeights[i] ? 0.30 : 0.20
+            let coeff: CGFloat = targetHeight > barHeights[i] ? 0.46 : 0.16
             barHeights[i] += (targetHeight - barHeights[i]) * coeff
             barHeights[i] = max(minBarHeight, min(maxBarHeight, barHeights[i]))
         }
 
         needsDisplay = true
+    }
+
+    private func filteredLevel(_ target: CGFloat, current: CGFloat) -> CGFloat {
+        let clamped = max(0, min(1, target))
+        if clamped < 0.015 { return 0 }
+        if current < 0.02, clamped > current { return clamped }
+        return abs(clamped - current) < levelDeadband ? current : clamped
     }
 
     // MARK: - Draw

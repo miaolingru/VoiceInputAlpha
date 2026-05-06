@@ -1,0 +1,241 @@
+/* App */
+"app.title" = "AtomVoice";
+"menu.holdFn" = "Maintiens Fn pour démarrer la saisie vocale";
+"menu.tapFn" = "Appuie sur Fn pour démarrer la saisie vocale";
+"menu.about" = "À propos d'AtomVoice";
+"menu.language" = "Langue de reconnaissance";
+"menu.recognitionEngine" = "Moteur de reconnaissance";
+"menu.recognitionEngine.apple" = "Apple Speech";
+"menu.recognitionEngine.sherpaOnnx" = "Sherpa (reconnaissance locale)";
+"menu.sherpaOpenFolder" = "Ouvrir le dossier Sherpa";
+"menu.audioInput" = "Périphérique d'entrée";
+"menu.audioInput.default" = "Par défaut du système";
+"menu.animation" = "Animation";
+"menu.animation.dynamicIsland" = "Dynamic Island";
+"menu.animation.minimal" = "Minimaliste";
+"menu.animation.none" = "Aucune";
+"menu.animation.speed" = "Vitesse d'animation";
+"menu.animation.slow" = "Lente";
+"menu.animation.medium" = "Moyenne";
+"menu.animation.fast" = "Rapide";
+"menu.punctuation" = "Ponctuation automatique";
+"menu.llm" = "Raffinement par LLM";
+"menu.llm.enabled" = "Activé";
+"menu.llm.disabled" = "Désactivé";
+"menu.llm.howto" = "Comment utiliser le raffinement par LLM";
+"menu.settings" = "Réglages...";
+"menu.quit" = "Quitter";
+"common.ok" = "OK";
+"common.cancel" = "Annuler";
+
+/* Settings */
+"settings.title" = "Réglages du raffinement par LLM";
+"settings.llm.desc" = "Utilise un LLM pour corriger automatiquement les erreurs de reconnaissance vocale et améliorer la ponctuation. Saisis ta clé API ci-dessous pour activer.";
+"settings.provider" = "Fournisseur :";
+"settings.apiUrl" = "URL de base de l'API :";
+"settings.apiKey" = "Clé API :";
+"settings.model" = "Modèle :";
+"settings.delay" = "Délai du résultat :";
+"settings.delayUnit" = "s (0 = injecter immédiatement)";
+"settings.manage" = "Gérer...";
+"settings.test" = "Tester";
+"settings.save" = "Enregistrer";
+"settings.cancel" = "Annuler";
+"settings.testing" = "Test en cours...";
+"settings.connected" = "Connexion réussie";
+"settings.connectFailed" = "Échec de la connexion : %@";
+"settings.saved" = "Enregistré";
+
+/* Provider Editor */
+"provider.title" = "Gérer les fournisseurs";
+"provider.col.name" = "Nom";
+"provider.col.url" = "URL de l'API";
+"provider.col.model" = "Modèle par défaut";
+"provider.new" = "Nouveau fournisseur";
+"provider.done" = "Terminé";
+"provider.label.name" = "Nom :";
+"provider.label.url" = "URL :";
+"provider.label.model" = "Modèle :";
+"provider.preset.openai" = "OpenAI";
+"provider.preset.anthropic" = "Anthropic (Claude)";
+"provider.preset.deepseek" = "DeepSeek";
+"provider.preset.moonshot" = "Moonshot (Kimi)";
+"provider.preset.alibaba" = "Alibaba Cloud Bailian (Qwen)";
+"provider.preset.zhipu" = "Zhipu AI (GLM)";
+"provider.preset.lingyi" = "01.AI (Yi)";
+"provider.preset.groq" = "Groq";
+"provider.preset.ollama" = "Ollama (local)";
+"provider.preset.custom" = "Personnalisé";
+
+/* Capsule */
+"capsule.refining" = "Raffinement...";
+
+/* About */
+"about.appName" = "AtomVoice";
+"about.title" = "À propos d'AtomVoice";
+"about.version" = "Version %@ (%@)";
+"about.bilibili" = "Bilibili";
+"about.github" = "GitHub";
+"about.copyright" = "© 2026 Miao Lingru. Tous droits réservés.";
+
+/* LLM How-to */
+"llm.howto.message" = "Le raffinement par LLM s'exécute après la fin de la reconnaissance vocale. Il demande au modèle choisi de relire le texte reconnu et de corriger les mots mal entendus, les homophones, les noms propres erronés et la ponctuation, afin que le texte saisi soit plus proche de ce que tu voulais dire.\n\nPar exemple : il peut corriger « pi-tonne » en « Python », ajouter la ponctuation manquante et nettoyer les phrases manifestement maladroites.\n\nComment l'utiliser :\n1. Choisis un fournisseur (OpenAI, Anthropic, DeepSeek ou personnalisé).\n2. Saisis ta clé API.\n3. Sélectionne un modèle et enregistre.\n4. Active « Raffinement par LLM » dans le menu.\n\nLorsque c'est activé, après chaque enregistrement, le texte reconnu est envoyé au fournisseur LLM choisi pour correction ; l'audio lui-même n'est pas envoyé. Appuie sur Espace ou Retour pendant l'enregistrement pour ignorer le LLM et taper immédiatement.";
+
+/* Errors */
+"error.noApiKey" = "Clé API non définie";
+"error.invalidUrl" = "URL d'API invalide";
+"error.timeout" = "Délai dépassé (%.2fs)";
+"error.noNetwork" = "Pas de connexion réseau";
+"error.noData" = "Aucune donnée de réponse";
+"error.badFormat" = "Format de réponse inattendu";
+"error.jsonParse" = "Erreur d'analyse JSON";
+"error.noInputDevice" = "Aucun microphone ni périphérique d'entrée détecté";
+"error.sherpaRuntimeMissing" = "Runtime Sherpa introuvable. Place les fichiers dylib dans :\n%@";
+"error.sherpaModelMissing" = "Modèle Sherpa introuvable. Place les fichiers du modèle dans :\n%@";
+"error.sherpaLoadFailed" = "Échec du démarrage de Sherpa : %@";
+
+/* Sherpa Download */
+"sherpa.download.title" = "Télécharger le modèle Sherpa";
+"sherpa.download.message" = "La reconnaissance locale Sherpa nécessite le téléchargement de fichiers de modèle (~149 Mo). Télécharger maintenant ?";
+"sherpa.download.confirm" = "Télécharger";
+"sherpa.downloading.start" = "Préparation du téléchargement du modèle Sherpa...";
+"sherpa.loadingModel" = "Chargement du modèle Sherpa...";
+"sherpa.downloading" = "Téléchargement du modèle Sherpa (%d/%d)...";
+"sherpa.downloading.progress" = "Téléchargement du modèle Sherpa (%d/%d)... %d%%";
+"sherpa.extracting" = "Extraction du modèle Sherpa (%d/%d)...";
+"sherpa.download.complete" = "Téléchargement du modèle Sherpa terminé ✓";
+"sherpa.download.failed" = "Échec du téléchargement du modèle Sherpa : %@";
+"sherpa.redownload.message" = "Les fichiers du modèle Sherpa sont manquants ou corrompus. Re-télécharger ?";
+
+/* Permissions */
+"permission.mic.title" = "Accès au microphone requis";
+"permission.mic.message" = "Accorde l'accès au microphone dans Réglages Système > Confidentialité et sécurité > Microphone.";
+"permission.speech.title" = "Reconnaissance vocale requise";
+"permission.speech.message" = "Accorde l'accès à la reconnaissance vocale dans Réglages Système > Confidentialité et sécurité > Reconnaissance vocale.";
+"accessibility.warning.title" = "Autorisation d'accessibilité perdue";
+"accessibility.warning.message" = "Va dans Réglages Système > Confidentialité et sécurité > Accessibilité, supprime puis rajoute AtomVoice.";
+"accessibility.openSettings" = "Ouvrir Réglages Système";
+"accessibility.ignore" = "Ignorer";
+
+/* Permissions Window */
+"permissions.window.title" = "État des autorisations système";
+"permissions.heading" = "Accorde les autorisations nécessaires à AtomVoice";
+"permissions.guide.title" = "Comment accorder les autorisations";
+"permissions.guide.step1" = "Clique sur le bouton à droite pour ouvrir Réglages Système";
+"permissions.guide.step2" = "Trouve AtomVoice dans la liste et active l'interrupteur";
+"permissions.guide.step3" = "Reviens ici et vérifie que le statut passe au vert (Accordé)";
+"permissions.troubleshoot" = "Dépannage";
+"permissions.reset" = "Réinitialiser toutes les autorisations";
+"permissions.reset.confirm.title" = "Réinitialiser les autorisations";
+"permissions.reset.confirm.message" = "Cela exécutera tccutil dans le Terminal pour réinitialiser les autorisations de microphone et de reconnaissance vocale. Tu devras les ré-accorder ensuite.";
+"permissions.reset.confirm.ok" = "Continuer";
+"permissions.reset.terminalDone" = "Terminé. Redémarre AtomVoice.";
+"permissions.close" = "Fermer";
+
+"permission.accessibility.title" = "Accessibilité";
+"permission.accessibility.desc" = "AtomVoice nécessite l'autorisation Accessibilité pour surveiller la touche Fn de manière globale. C'est la fonctionnalité principale.";
+"permission.microphone.title" = "Microphone";
+"permission.microphone.desc" = "AtomVoice nécessite l'autorisation Microphone pour enregistrer ta voix.";
+"permission.speech.title" = "Reconnaissance vocale";
+"permission.speech.desc" = "AtomVoice nécessite l'autorisation Reconnaissance vocale pour transcrire ta voix en texte.";
+
+"permission.status.granted" = "Accordé";
+"permission.status.denied" = "Refusé";
+"permission.status.notDetermined" = "Non défini";
+"permission.action.open" = "Ouvrir Réglages Système";
+"permission.action.request" = "Demander l'autorisation";
+
+"menu.launchAtLogin" = "Lancer à la connexion";
+"menu.help" = "Autorisations et aide";
+"menu.privacyPolicy" = "Politique de confidentialité";
+
+/* Trigger Key */
+"menu.triggerKey" = "Touche déclencheuse";
+"menu.triggerKey.fn" = "Fn / Globe (par défaut)";
+"menu.triggerKey.rightOption" = "Option droite ⌥";
+"menu.triggerKey.rightControl" = "Contrôle droit ^";
+"menu.triggerKey.rightCommand" = "Commande droite ⌘";
+"menu.triggerKey.fn.symbol" = "Fn";
+"menu.triggerKey.rightOption.symbol" = "Option droite ⌥";
+"menu.triggerKey.rightControl.symbol" = "Contrôle droit ^";
+"menu.triggerKey.rightCommand.symbol" = "Commande droite ⌘";
+"menu.holdKey" = "Maintiens %@";
+"menu.tapKey" = "Appuie sur %@";
+"menu.startVoiceInput" = "pour démarrer la saisie vocale";
+
+/* Other Settings */
+"menu.otherSettings" = "Autres réglages";
+"menu.appleOnDeviceSpeech" = "Forcer Apple hors ligne";
+"menu.appleOnDeviceSpeech.unavailable" = "Forcer Apple hors ligne (indisponible)";
+"menu.engine.howto" = "Comment choisir un moteur";
+"engine.howto.message" = "• Apple Speech\nIdéal pour : la dictée du quotidien, les réseaux stables et la priorité à la précision de reconnaissance.\nPoints forts : bien intégré à macOS, résultats en streaming rapides et couverture linguistique généralement large.\nLimites : dépend normalement des services réseau/système ; l'audio peut être traité par le service en ligne d'Apple ; un réseau faible ou des problèmes du service Apple réduisent la fiabilité.\n\n• SherpaOnnx\nIdéal pour : un usage axé sur la confidentialité, les environnements hors ligne, ou éviter les services Apple Speech.\nPoints forts : entièrement local, pas besoin d'Internet, l'audio n'est pas envoyé à des tiers.\nLimites : nécessite des fichiers de modèle et de runtime ; les modèles actuels peuvent être inférieurs à Apple Speech en couverture, précision, ponctuation et reconnaissance des noms propres ; consomme plus de ressources locales.\n\n• Forcer Apple hors ligne\nIdéal pour : conserver l'expérience Apple Speech tout en évitant autant que possible le traitement dans le cloud.\nLimites : certaines langues ne sont pas prises en charge ; la précision peut chuter ; la reconnaissance peut échouer si les ressources vocales locales manquent ; reste limité par le framework Speech d'Apple.\n\nRecommandation : choisis Apple pour la précision ; SherpaOnnx pour la confidentialité et l'usage hors ligne ; active Forcer Apple hors ligne si tu veux Apple Speech mais préfères le traitement local.";
+
+/* Input Mode */
+"menu.inputMode" = "Mode de saisie";
+"menu.inputMode.tap" = "Appuyer pour parler";
+"menu.inputMode.hold" = "Maintenir pour parler";
+"menu.inputMode.liveInsertion" = "Insertion en direct (expérimental)";
+"menu.inputMode.liveInsertion.tooltip" = "Apple Speech uniquement. Les phrases terminées sont insérées pendant l'enregistrement ; le raffinement par LLM est ignoré pour le texte inséré en direct.";
+"menu.silence.duration" = "Délai d'arrêt";
+
+/* Custom Prompt */
+"settings.prompt.label" = "Prompt système :";
+"settings.prompt.title" = "Prompt système personnalisé";
+"settings.prompt.desc" = "Saisis le prompt système qui guidera le LLM dans le raffinement du texte transcrit. Laisse vide pour utiliser le prompt par défaut de la langue sélectionnée.";
+"settings.prompt.edit" = "Modifier...";
+"settings.prompt.done" = "Terminé";
+"settings.prompt.cancel" = "Annuler";
+"settings.prompt.reset" = "Réinitialiser au défaut";
+"settings.delay.immediate" = "Immédiat";
+
+/* Update */
+"menu.checkForUpdates" = "Rechercher des mises à jour...";
+"menu.betaUpdates" = "Inclure les versions bêta";
+"update.available.title" = "Mise à jour disponible";
+"update.available.message" = "AtomVoice %@ est disponible (tu as %@). Installer maintenant ?";
+"update.upToDate.title" = "Tu es à jour";
+"update.upToDate.message" = "AtomVoice %@ est la dernière version.";
+"update.install" = "Installer";
+"update.later" = "Plus tard";
+"update.downloading" = "Téléchargement de %@...";
+"update.installing" = "Installation...";
+"update.done.title" = "Mise à jour prête";
+"update.done.message" = "AtomVoice %@ a été téléchargé. Redémarre maintenant pour appliquer la mise à jour.";
+"update.restart" = "Redémarrer maintenant";
+"update.error.title" = "Échec de la mise à jour";
+"update.error.fetch" = "Impossible de rechercher les mises à jour : %@";
+"update.error.download" = "Échec du téléchargement : %@";
+"update.error.install" = "Échec de l'installation : %@";
+"update.beta" = "Bêta";
+"menu.lowerVolumeOnRecording" = "Réduire le volume pendant l'enregistrement";
+"menu.lowerVolumeOnRecording.tooltip" = "Réduire le volume système de 80% pendant l'enregistrement";
+
+/* Tooltips */
+"tooltip.provider.add" = "Ajouter un nouveau fournisseur LLM";
+"tooltip.provider.delete" = "Supprimer le fournisseur LLM sélectionné";
+"tooltip.settings.provider" = "Choisir un fournisseur LLM pour le raffinement du texte";
+"tooltip.settings.manage" = "Ouvrir la liste des fournisseurs pour ajouter, supprimer ou modifier";
+"tooltip.settings.baseURL" = "Point de terminaison API du fournisseur LLM";
+"tooltip.settings.apiKey" = "Clé API du fournisseur LLM";
+"tooltip.settings.model" = "Nom du modèle LLM à utiliser";
+"tooltip.settings.delay" = "Temps d'attente après la reconnaissance avant d'injecter le texte";
+"tooltip.settings.prompt" = "Personnaliser le prompt système envoyé au LLM";
+"tooltip.settings.test" = "Tester la connexion API du LLM avec les paramètres actuels";
+"tooltip.settings.save" = "Enregistrer les paramètres et fermer la fenêtre";
+"tooltip.prompt.reset" = "Restaurer le prompt système par défaut";
+"tooltip.prompt.done" = "Enregistrer le prompt et fermer";
+"tooltip.prompt.cancel" = "Annuler les modifications et fermer";
+"tooltip.permissions.reset" = "Réinitialiser les autorisations de microphone et de reconnaissance vocale (redémarrage requis)";
+"tooltip.about.bilibili" = "Ouvrir la page Bilibili dans le navigateur";
+"tooltip.about.github" = "Ouvrir le dépôt GitHub dans le navigateur";
+
+/* Menu Tooltips */
+"tooltip.menu.punctuation" = "Ajouter automatiquement la ponctuation au texte reconnu";
+"tooltip.menu.llm" = "Utiliser un LLM pour corriger les erreurs de reconnaissance et polir le texte";
+"tooltip.menu.inputMode" = "Choisir le déclenchement de la saisie vocale : appuyer ou maintenir";
+"tooltip.menu.triggerKey" = "Choisir quelle touche déclenche la saisie vocale";
+"tooltip.menu.audioInput" = "Sélectionner le microphone ou le périphérique d'entrée";
+"tooltip.menu.lowerVolumeOnRecording" = "Réduire le volume système de 80% pendant l'enregistrement";
+"tooltip.menu.launchAtLogin" = "Démarrer AtomVoice automatiquement à la connexion";
+"tooltip.menu.help" = "Voir l'état des autorisations et le guide de dépannage";
+"tooltip.menu.about" = "Voir les informations de version et les liens";

@@ -12,6 +12,7 @@ final class MenuBarController {
     private var aboutWindow: AboutWindowController?
     private var permissionsWindow: PermissionsWindowController?
     var onTriggerKeyChanged: ((UInt16) -> Void)?
+    var onSherpaDownloadRequested: (() -> Void)?
 
     private let languages: [(code: String, name: String)] = [
         ("en-US", "English"),
@@ -123,11 +124,13 @@ final class MenuBarController {
         punctItem.image = icon("text.badge.plus")
         punctItem.target = self
         punctItem.state = punctEnabled ? .on : .off
+        punctItem.toolTip = loc("tooltip.menu.punctuation")
         menu.addItem(punctItem)
 
         // LLM 优化
         let llmItem = NSMenuItem(title: loc("menu.llm"), action: nil, keyEquivalent: "")
         llmItem.image = icon("wand.and.stars")
+        llmItem.toolTip = loc("tooltip.menu.llm")
         let llmMenu = NSMenu()
         let llmEnabled = UserDefaults.standard.bool(forKey: "llmEnabled")
         let toggleItem = NSMenuItem(
@@ -155,6 +158,7 @@ final class MenuBarController {
         // 输入方式: 单击说话 or 长按说话
         let inputModeItem = NSMenuItem(title: loc("menu.inputMode"), action: nil, keyEquivalent: "")
         inputModeItem.image = icon("waveform")
+        inputModeItem.toolTip = loc("tooltip.menu.inputMode")
         let inputModeMenu = NSMenu()
         let tapItem = NSMenuItem(title: loc("menu.inputMode.tap"), action: #selector(selectInputModeTap(_:)), keyEquivalent: "")
         tapItem.target = self
@@ -192,6 +196,7 @@ final class MenuBarController {
         // 触发按键
         let triggerItem = NSMenuItem(title: loc("menu.triggerKey"), action: nil, keyEquivalent: "")
         triggerItem.image = icon("command")
+        triggerItem.toolTip = loc("tooltip.menu.triggerKey")
         let triggerMenu = NSMenu()
         for option in TriggerKeyOption.all {
             let item = NSMenuItem(title: loc(option.locKey), action: #selector(selectTriggerKey(_:)), keyEquivalent: "")
@@ -206,6 +211,7 @@ final class MenuBarController {
         // 音频输入设备
         let audioInputItem = NSMenuItem(title: loc("menu.audioInput"), action: nil, keyEquivalent: "")
         audioInputItem.image = icon("mic.badge.plus")
+        audioInputItem.toolTip = loc("tooltip.menu.audioInput")
         let audioInputMenu = NSMenu()
         let savedUID = UserDefaults.standard.string(forKey: "audioInputDeviceUID") ?? ""
         let defaultItem = NSMenuItem(title: loc("menu.audioInput.default"), action: #selector(selectAudioInput(_:)), keyEquivalent: "")
@@ -237,6 +243,7 @@ final class MenuBarController {
         let aboutItem = NSMenuItem(title: loc("menu.about"), action: #selector(openAbout(_:)), keyEquivalent: "")
         aboutItem.image = icon("info.circle")
         aboutItem.target = self
+        aboutItem.toolTip = loc("tooltip.menu.about")
         menu.addItem(aboutItem)
 
         let quitItem = NSMenuItem(title: loc("menu.quit"), action: #selector(quit(_:)), keyEquivalent: "q")
@@ -285,21 +292,33 @@ final class MenuBarController {
 
         m.addItem(.separator())
 
+        // 录音时降低系统音量
+        let lowerVolumeItem = NSMenuItem(title: loc("menu.lowerVolumeOnRecording"),
+                                           action: #selector(toggleLowerVolumeOnRecording(_:)),
+                                           keyEquivalent: "")
+        lowerVolumeItem.image = icon("speaker.wave.1")
+        lowerVolumeItem.target = self
+        lowerVolumeItem.state = UserDefaults.standard.bool(forKey: "lowerVolumeOnRecording") ? .on : .off
+        lowerVolumeItem.toolTip = loc("tooltip.menu.lowerVolumeOnRecording")
+        m.addItem(lowerVolumeItem)
+
         // 开机启动
         let launchAtLoginItem = NSMenuItem(title: loc("menu.launchAtLogin"),
-                                           action: #selector(toggleLaunchAtLogin(_:)),
-                                           keyEquivalent: "")
+                                            action: #selector(toggleLaunchAtLogin(_:)),
+                                            keyEquivalent: "")
         launchAtLoginItem.image = icon("power.circle")
         launchAtLoginItem.target = self
         launchAtLoginItem.state = isLaunchAtLoginEnabled ? .on : .off
+        launchAtLoginItem.toolTip = loc("tooltip.menu.launchAtLogin")
         m.addItem(launchAtLoginItem)
 
         // 权限与帮助
         let helpItem = NSMenuItem(title: loc("menu.help"),
-                                  action: #selector(openPermissions(_:)),
-                                  keyEquivalent: "")
+                                   action: #selector(openPermissions(_:)),
+                                   keyEquivalent: "")
         helpItem.image = hasAllPermissions ? icon("checkmark.shield") : icon("exclamationmark.shield")
         helpItem.target = self
+        helpItem.toolTip = loc("tooltip.menu.help")
         m.addItem(helpItem)
 
         // 隐私政策
@@ -379,8 +398,36 @@ final class MenuBarController {
 
     @objc private func selectRecognitionEngine(_ sender: NSMenuItem) {
         guard let code = sender.representedObject as? String else { return }
+
+        if code == "sherpaOnnx", !sherpaModelsReadyOrSelfHealed() {
+            let alert = NSAlert()
+            alert.messageText = loc("sherpa.download.title")
+            alert.informativeText = loc("sherpa.download.message")
+            alert.icon = NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: nil)
+            alert.addButton(withTitle: loc("sherpa.download.confirm"))
+            alert.addButton(withTitle: loc("common.cancel"))
+            if AppDelegate.runModalAlert(alert) == .alertFirstButtonReturn {
+                UserDefaults.standard.set(code, forKey: "recognitionEngine")
+                rebuildMenu()
+                onSherpaDownloadRequested?()
+            }
+            return
+        }
+
         UserDefaults.standard.set(code, forKey: "recognitionEngine")
         rebuildMenu()
+    }
+
+    private func sherpaModelsReadyOrSelfHealed() -> Bool {
+        if UserDefaults.standard.bool(forKey: "sherpaModelsReady") { return true }
+
+        if SherpaModelDownloader.allModelsReady || SherpaModelDownloader.repairExtractedFilesIfNeeded() {
+            UserDefaults.standard.set(true, forKey: "sherpaModelsReady")
+            print("[SherpaOnnx] 菜单选择时检测到完整模型，自动修复 sherpaModelsReady = true")
+            return true
+        }
+
+        return false
     }
 
     @objc private func openSherpaFolder(_ sender: NSMenuItem) {
@@ -663,6 +710,12 @@ final class MenuBarController {
                 print("[LaunchAtLogin] Error: \(error)")
             }
         }
+        rebuildMenu()
+    }
+
+    @objc private func toggleLowerVolumeOnRecording(_ sender: NSMenuItem) {
+        let current = UserDefaults.standard.bool(forKey: "lowerVolumeOnRecording")
+        UserDefaults.standard.set(!current, forKey: "lowerVolumeOnRecording")
         rebuildMenu()
     }
 

@@ -6,34 +6,40 @@ final class CapsuleWindowController {
     private var textLabel: NSTextField?
     private var refiningLabel: NSTextField?
     private var contentView: NSView?
+    private var animationSurfaceView: NSView?
     private var springTimer: Timer?
     private var shimmerLayer: CAGradientLayer?
     private var shimmerClipLayer: CALayer?  // 裁剪为胶囊形状的容器层
+    private var activeAnimationInset: CGFloat = 0
+    private var waveformVisible = true
 
     #if DEBUG_BUILD
     private var timerLabel: NSTextField?
     private var elapsedTimer: Timer?
     private var recordingStartTime: Date?
+    private var debugTimerVisible = false
     private let timerLabelWidth: CGFloat = 34
     private let timerLabelGap: CGFloat = 8
     #endif
 
-    private let capsuleHeight: CGFloat = 50
-    private let cornerRadius: CGFloat = 25
+    private let capsuleHeight: CGFloat = 42
+    private let cornerRadius: CGFloat = 21
     private let waveformWidth: CGFloat = 24
     private let waveformLeadingOffset: CGFloat = 8
     private let waveformTextGap: CGFloat = 12
     private let minTextWidth: CGFloat = 144
     private let maxTextWidth: CGFloat = 504
     private let horizontalPadding: CGFloat = 24
-    private let pillWidth: CGFloat = 50  // 入场/退场起止小胶囊宽度
+    private let spotlightAnimationInset: CGFloat = 18
+    private let spotlightInBlurRadius: CGFloat = 14
+    private let spotlightOutBlurRadius: CGFloat = 10
 
-    // 弹簧参数根据速度设置动态读取
-    private var springParams: (k: CGFloat, c: CGFloat) {
+    // Spotlight 式弹性动效参数，根据菜单速度动态读取
+    private var spotlightMotion: (inScale: CGFloat, overshootScale: CGFloat, settleScale: CGFloat, outScale: CGFloat, fadeIn: TimeInterval, fadeOut: TimeInterval, blurIn: TimeInterval, scaleIn: TimeInterval, scaleOut: TimeInterval) {
         switch UserDefaults.standard.string(forKey: "animationSpeed") ?? "medium" {
-        case "slow":   return (260, 24)   // ~0.7s
-        case "fast":   return (600, 42)   // ~0.3s
-        default:       return (400, 32)   // ~0.45s（中）
+        case "slow": return (0.72, 1.045, 0.985, 0.92, 0.08, 0.14, 0.18, 0.34, 0.14)
+        case "fast": return (0.82, 1.025, 0.995, 0.94, 0.04, 0.09, 0.09, 0.20, 0.09)
+        default:     return (0.78, 1.035, 0.99, 0.93, 0.055, 0.11, 0.12, 0.26, 0.11)
         }
     }
 
@@ -41,12 +47,20 @@ final class CapsuleWindowController {
         UserDefaults.standard.string(forKey: "animationStyle") ?? "dynamicIsland"
     }
 
+    private var usesSingleBounceSpotlightAnimation: Bool {
+        (NSScreen.main?.maximumFramesPerSecond ?? 60) <= 60
+    }
+
+    private var spotlightFrameInterval: TimeInterval {
+        usesSingleBounceSpotlightAnimation ? 1.0 / 60.0 : 1.0 / 120.0
+    }
+
     // MARK: - 布局计算
 
     private func fullWidth(forTextWidth tw: CGFloat) -> CGFloat {
         let base = tw + waveformWidth + waveformLeadingOffset + horizontalPadding * 2 + waveformTextGap
         #if DEBUG_BUILD
-        return base + timerLabelGap + timerLabelWidth
+        return debugTimerVisible ? base + timerLabelGap + timerLabelWidth : base
         #else
         return base
         #endif
@@ -57,26 +71,36 @@ final class CapsuleWindowController {
         return NSRect(x: s.midX - width / 2, y: s.minY + 54, width: width, height: capsuleHeight)
     }
 
+    private func panelFrame(forVisualFrame visualFrame: NSRect) -> NSRect {
+        visualFrame.insetBy(dx: -activeAnimationInset, dy: -activeAnimationInset)
+    }
+
     // MARK: - Show
 
-    func show() {
+    func show(showRecordingTimer: Bool = true) {
         if panel != nil {
             // 上一次 showError 的 3 秒延迟尚未结束时重新录音，先清理旧面板
             cleanup()
         }
 
+        #if DEBUG_BUILD
+        debugTimerVisible = showRecordingTimer
+        #endif
+        waveformVisible = true
+
         let fw = fullWidth(forTextWidth: minTextWidth)
         let target = targetFrame(width: fw)
+        activeAnimationInset = animationStyle == "dynamicIsland" ? spotlightAnimationInset : 0
 
         let panel = NSPanel(
-            contentRect: target,
+            contentRect: panelFrame(forVisualFrame: target),
             styleMask: [.nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
         panel.isOpaque = false
         panel.backgroundColor = .clear
-        panel.hasShadow = true   // 系统阴影自动跟随透明窗口的可见内容轮廓
+        panel.hasShadow = true   // 使用系统窗口阴影，边缘响应交给 NSGlassEffectView
         panel.level = .floating
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.isMovableByWindowBackground = false
@@ -87,8 +111,15 @@ final class CapsuleWindowController {
         let container = NSView()
         container.translatesAutoresizingMaskIntoConstraints = false
 
+        let surface = NSView(frame: panel.contentView!.bounds.insetBy(dx: activeAnimationInset, dy: activeAnimationInset))
+        surface.autoresizingMask = [.width, .height]
+        surface.wantsLayer = true
+        surface.layer?.masksToBounds = false
+        panel.contentView?.addSubview(surface)
+
         let waveform = WaveformView(frame: .zero)
         waveform.translatesAutoresizingMaskIntoConstraints = false
+        waveform.alphaValue = animationStyle == "none" ? 1 : 0
         container.addSubview(waveform)
 
         let label = NSTextField(labelWithString: "")
@@ -114,7 +145,8 @@ final class CapsuleWindowController {
         if #available(macOS 26.0, *) {
             let glass = NSGlassEffectView()
             glass.cornerRadius = cornerRadius
-            glass.style = .regular
+            glass.style = .clear
+            glass.tintColor = NSColor.windowBackgroundColor.withAlphaComponent(0.065)
             glass.translatesAutoresizingMaskIntoConstraints = false
             glass.contentView = container
             // none 模式下禁用 glass view 自带的隐式入场动画
@@ -123,38 +155,46 @@ final class CapsuleWindowController {
                 CATransaction.setDisableActions(true)
                 CATransaction.setAnimationDuration(0)
             }
-            panel.contentView?.addSubview(glass)
+            surface.addSubview(glass)
             if animationStyle == "none" {
                 CATransaction.commit()
             }
             glass.wantsLayer = true
+            glass.layer?.masksToBounds = true
             NSLayoutConstraint.activate([
-                glass.leadingAnchor.constraint(equalTo: panel.contentView!.leadingAnchor),
-                glass.trailingAnchor.constraint(equalTo: panel.contentView!.trailingAnchor),
-                glass.topAnchor.constraint(equalTo: panel.contentView!.topAnchor),
-                glass.bottomAnchor.constraint(equalTo: panel.contentView!.bottomAnchor),
+                glass.leadingAnchor.constraint(equalTo: surface.leadingAnchor),
+                glass.trailingAnchor.constraint(equalTo: surface.trailingAnchor),
+                glass.topAnchor.constraint(equalTo: surface.topAnchor),
+                glass.bottomAnchor.constraint(equalTo: surface.bottomAnchor),
                 container.leadingAnchor.constraint(equalTo: glass.leadingAnchor, constant: horizontalPadding),
                 container.trailingAnchor.constraint(equalTo: glass.trailingAnchor, constant: -horizontalPadding),
                 container.topAnchor.constraint(equalTo: glass.topAnchor),
                 container.bottomAnchor.constraint(equalTo: glass.bottomAnchor),
             ])
         } else {
-            let fx = NSVisualEffectView(frame: panel.contentView!.bounds)
-            fx.autoresizingMask = [.width, .height]
-            fx.material = .hudWindow
+            let fx = NSVisualEffectView(frame: .zero)
+            fx.translatesAutoresizingMaskIntoConstraints = false
+            fx.material = .popover
             fx.state = .active
             fx.blendingMode = .behindWindow
             fx.wantsLayer = true
             fx.layer?.cornerRadius = cornerRadius
             fx.layer?.masksToBounds = true
             fx.layer?.cornerCurve = .continuous
-            panel.contentView?.addSubview(fx)
-            panel.contentView?.addSubview(container)
+            fx.layer?.backgroundColor = NSColor.windowBackgroundColor.withAlphaComponent(0.08).cgColor
+            fx.layer?.borderWidth = 0.5
+            fx.layer?.borderColor = NSColor.white.withAlphaComponent(0.18).cgColor
+            surface.addSubview(fx)
+            surface.addSubview(container)
             NSLayoutConstraint.activate([
-                container.leadingAnchor.constraint(equalTo: panel.contentView!.leadingAnchor, constant: horizontalPadding),
-                container.trailingAnchor.constraint(equalTo: panel.contentView!.trailingAnchor, constant: -horizontalPadding),
-                container.topAnchor.constraint(equalTo: panel.contentView!.topAnchor),
-                container.bottomAnchor.constraint(equalTo: panel.contentView!.bottomAnchor),
+                fx.leadingAnchor.constraint(equalTo: surface.leadingAnchor),
+                fx.trailingAnchor.constraint(equalTo: surface.trailingAnchor),
+                fx.topAnchor.constraint(equalTo: surface.topAnchor),
+                fx.bottomAnchor.constraint(equalTo: surface.bottomAnchor),
+                container.leadingAnchor.constraint(equalTo: surface.leadingAnchor, constant: horizontalPadding),
+                container.trailingAnchor.constraint(equalTo: surface.trailingAnchor, constant: -horizontalPadding),
+                container.topAnchor.constraint(equalTo: surface.topAnchor),
+                container.bottomAnchor.constraint(equalTo: surface.bottomAnchor),
             ])
         }
 
@@ -171,21 +211,25 @@ final class CapsuleWindowController {
         ])
 
         #if DEBUG_BUILD
-        // 计时器标签：固定宽度，紧贴右边
-        let timerLbl = NSTextField(labelWithString: "0s")
-        timerLbl.translatesAutoresizingMaskIntoConstraints = false
-        timerLbl.font = .monospacedDigitSystemFont(ofSize: 11, weight: .regular)
-        timerLbl.textColor = .tertiaryLabelColor
-        timerLbl.alignment = .right
-        container.addSubview(timerLbl)
-        NSLayoutConstraint.activate([
-            label.trailingAnchor.constraint(equalTo: timerLbl.leadingAnchor, constant: -timerLabelGap),
-            timerLbl.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            timerLbl.centerYAnchor.constraint(equalTo: container.centerYAnchor),
-            timerLbl.widthAnchor.constraint(equalToConstant: timerLabelWidth),
-        ])
-        self.timerLabel = timerLbl
-        startElapsedTimer()
+        if showRecordingTimer {
+            // 计时器标签：仅录音调试时显示，下载等状态胶囊不显示。
+            let timerLbl = NSTextField(labelWithString: "0s")
+            timerLbl.translatesAutoresizingMaskIntoConstraints = false
+            timerLbl.font = .monospacedDigitSystemFont(ofSize: 11, weight: .regular)
+            timerLbl.textColor = .tertiaryLabelColor
+            timerLbl.alignment = .right
+            container.addSubview(timerLbl)
+            NSLayoutConstraint.activate([
+                label.trailingAnchor.constraint(equalTo: timerLbl.leadingAnchor, constant: -timerLabelGap),
+                timerLbl.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+                timerLbl.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+                timerLbl.widthAnchor.constraint(equalToConstant: timerLabelWidth),
+            ])
+            self.timerLabel = timerLbl
+            startElapsedTimer()
+        } else {
+            label.trailingAnchor.constraint(equalTo: container.trailingAnchor).isActive = true
+        }
         #else
         label.trailingAnchor.constraint(equalTo: container.trailingAnchor).isActive = true
         #endif
@@ -195,6 +239,7 @@ final class CapsuleWindowController {
         self.textLabel = label
         self.refiningLabel = refLabel
         self.contentView = container
+        self.animationSurfaceView = surface
 
         switch animationStyle {
         case "none":    animateInNone(panel: panel, targetFrame: target)
@@ -203,92 +248,201 @@ final class CapsuleWindowController {
         }
     }
 
-    // MARK: - 灵动岛入场：真实弹簧物理
+    // MARK: - Spotlight 入场：中心弹性缩放 + 高斯模糊收敛
+
+    private func setCenterAnchor(for layer: CALayer) {
+        let savedBounds = layer.bounds
+        let savedPosition = layer.position
+        layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        layer.bounds = savedBounds
+        layer.position = savedPosition
+    }
+
+    private func visualFrame(_ frame: NSRect, scaledBy scale: CGFloat) -> NSRect {
+        let width = frame.width * scale
+        let height = frame.height * scale
+        return NSRect(x: frame.midX - width / 2, y: frame.midY - height / 2, width: width, height: height)
+    }
+
+    private func visualFrame(_ frame: NSRect, widthScale: CGFloat, heightScale: CGFloat) -> NSRect {
+        let width = frame.width * widthScale
+        let height = frame.height * heightScale
+        return NSRect(x: frame.midX - width / 2, y: frame.midY - height / 2, width: width, height: height)
+    }
+
+    private func easeOutCubic(_ value: CGFloat) -> CGFloat {
+        let t = max(0, min(1, value))
+        let inverse = 1 - t
+        return 1 - inverse * inverse * inverse
+    }
+
+    private func easeInCubic(_ value: CGFloat) -> CGFloat {
+        let t = max(0, min(1, value))
+        return t * t * t
+    }
+
+    private func spotlightInScale(progress: CGFloat, motion: (inScale: CGFloat, overshootScale: CGFloat, settleScale: CGFloat, outScale: CGFloat, fadeIn: TimeInterval, fadeOut: TimeInterval, blurIn: TimeInterval, scaleIn: TimeInterval, scaleOut: TimeInterval)) -> CGFloat {
+        if progress < 0.52 {
+            let t = easeOutCubic(progress / 0.52)
+            return motion.inScale + (motion.overshootScale - motion.inScale) * t
+        }
+        if progress < 0.78 {
+            let t = easeOutCubic((progress - 0.52) / 0.26)
+            return motion.overshootScale + (motion.settleScale - motion.overshootScale) * t
+        }
+        let t = easeOutCubic((progress - 0.78) / 0.22)
+        return motion.settleScale + (1.0 - motion.settleScale) * t
+    }
+
+    private func spotlightInScales(progress: CGFloat) -> (width: CGFloat, height: CGFloat) {
+        if usesSingleBounceSpotlightAnimation {
+            if progress < 0.58 {
+                let t = easeOutCubic(progress / 0.58)
+                return (
+                    width: 1.10 + (0.985 - 1.10) * t,
+                    height: 0.76 + (1.05 - 0.76) * t
+                )
+            }
+            let t = easeOutCubic((progress - 0.58) / 0.42)
+            return (
+                width: 0.985 + (1.0 - 0.985) * t,
+                height: 1.05 + (1.0 - 1.05) * t
+            )
+        }
+
+        if progress < 0.48 {
+            let t = easeOutCubic(progress / 0.48)
+            return (
+                width: 1.16 + (0.965 - 1.16) * t,
+                height: 0.68 + (1.08 - 0.68) * t
+            )
+        }
+        if progress < 0.76 {
+            let t = easeOutCubic((progress - 0.48) / 0.28)
+            return (
+                width: 0.965 + (1.012 - 0.965) * t,
+                height: 1.08 + (0.985 - 1.08) * t
+            )
+        }
+        let t = easeOutCubic((progress - 0.76) / 0.24)
+        return (
+            width: 1.012 + (1.0 - 1.012) * t,
+            height: 0.985 + (1.0 - 0.985) * t
+        )
+    }
+
+    private func spotlightOutScale(progress: CGFloat, motion: (inScale: CGFloat, overshootScale: CGFloat, settleScale: CGFloat, outScale: CGFloat, fadeIn: TimeInterval, fadeOut: TimeInterval, blurIn: TimeInterval, scaleIn: TimeInterval, scaleOut: TimeInterval)) -> CGFloat {
+        if usesSingleBounceSpotlightAnimation {
+            let t = easeInCubic(progress)
+            return 1.0 + (motion.outScale - 1.0) * t
+        }
+
+        if progress < 0.28 {
+            let t = easeOutCubic(progress / 0.28)
+            return 1.0 + (1.012 - 1.0) * t
+        }
+        let t = easeInCubic((progress - 0.28) / 0.72)
+        return 1.012 + (motion.outScale - 1.012) * t
+    }
+
+    private func layoutAnimationSurface(in panel: NSPanel) {
+        guard let surface = animationSurfaceView, let host = panel.contentView else { return }
+        host.layoutSubtreeIfNeeded()
+        let frame = host.bounds.insetBy(dx: activeAnimationInset, dy: activeAnimationInset)
+
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        surface.frame = frame
+        if let layer = surface.layer {
+            layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+            layer.bounds = CGRect(origin: .zero, size: frame.size)
+            layer.position = CGPoint(x: frame.midX, y: frame.midY)
+        }
+        CATransaction.commit()
+
+        surface.layoutSubtreeIfNeeded()
+    }
 
     private func animateInSpring(panel: NSPanel, container: NSView, targetFrame: NSRect) {
-        // 起始：正下方小圆胶囊
-        let startFrame = NSRect(
-            x: targetFrame.midX - pillWidth / 2,
-            y: targetFrame.minY - 20,
-            width: pillWidth,
-            height: capsuleHeight
-        )
-
-        // 内容模糊（被 glass/effect view 圆角裁剪）
-        container.wantsLayer = true
-        let blur = CIFilter(name: "CIGaussianBlur")!
-        blur.setValue(12.0, forKey: kCIInputRadiusKey)
-        container.layer?.filters = [blur]
-        container.layer?.masksToBounds = false
-
-        panel.setFrame(startFrame, display: false)
+        let motion = spotlightMotion
+        let initialScales = spotlightInScales(progress: 0)
+        panel.setFrame(panelFrame(forVisualFrame: visualFrame(targetFrame, widthScale: initialScales.width, heightScale: initialScales.height)), display: false)
         panel.alphaValue = 0
-        panel.orderFrontRegardless()
+        container.alphaValue = 0
 
-        // 延迟一帧，让 NSVisualEffectView / NSGlassEffectView 先采样背景色，
-        // 避免首帧出现白色 fallback 再切换为深色的闪烁
-        DispatchQueue.main.async { [weak self] in
-        guard let self else { return }
+        panel.contentView?.wantsLayer = true
+        let surface = animationSurfaceView ?? panel.contentView
+        surface?.wantsLayer = true
+        surface?.layer?.masksToBounds = false
+        surface?.layer?.transform = CATransform3DIdentity
+        container.wantsLayer = true
+        layoutAnimationSurface(in: panel)
 
-        // 弹簧状态：[x, y, width] 各自独立物理积分
-        var sx = startFrame.origin.x, vx: CGFloat = 0
-        var sy = startFrame.origin.y, vy: CGFloat = 0
-        var sw = startFrame.width,    vw: CGFloat = 0
-        let tx = targetFrame.origin.x
-        let ty = targetFrame.origin.y
-        let tw = targetFrame.width
-
-        let (k, c) = springParams
-        let dt: CGFloat = 1.0 / 120.0   // 120Hz 物理更新
-        var elapsed: CGFloat = 0
-        let maxTime: CGFloat = 1.2       // 超过此时间强制结束
-
-        // 模糊同步消除：用独立 CABasicAnimation，时长略长确保完整清晰
-        let blurAnim = CABasicAnimation(keyPath: "filters.CIGaussianBlur.inputRadius")
-        blurAnim.fromValue = 12.0
-        blurAnim.toValue = 0.0
-        blurAnim.duration = 0.5
-        blurAnim.timingFunction = CAMediaTimingFunction(name: .easeOut)
-        blurAnim.fillMode = .forwards
-        blurAnim.isRemovedOnCompletion = false
-        container.layer?.add(blurAnim, forKey: "blurIn")
-
-        springTimer?.invalidate()
-        springTimer = Timer(timeInterval: Double(dt), repeats: true) { [weak self] timer in
-            guard let self, let panel = self.panel else { timer.invalidate(); return }
-            elapsed += dt
-
-            // 弹簧微分方程：a = (-k·Δx - c·v) / m
-            func step(_ x: inout CGFloat, _ v: inout CGFloat, _ target: CGFloat) {
-                let a = -k * (x - target) - c * v
-                v += a * dt
-                x += v * dt
-            }
-            step(&sx, &vx, tx)
-            step(&sy, &vy, ty)
-            step(&sw, &vw, tw)
-
-            // 淡入：前 150ms 完成
-            let alpha = min(1.0, elapsed / 0.15)
-            panel.alphaValue = alpha
-            panel.setFrame(NSRect(x: sx, y: sy, width: sw, height: self.capsuleHeight), display: false)
-
-            // 判断是否已稳定
-            let settled = elapsed > maxTime ||
-                (abs(vx) < 0.3 && abs(vy) < 0.3 && abs(vw) < 0.3 &&
-                 abs(sx - tx) < 0.3 && abs(sy - ty) < 0.3 && abs(sw - tw) < 0.3)
-
-            if settled {
-                timer.invalidate()
-                self.springTimer = nil
-                panel.setFrame(targetFrame, display: false)
-                panel.alphaValue = 1
-                container.layer?.filters = nil
-                container.layer?.removeAnimation(forKey: "blurIn")
-            }
+        if let blur = CIFilter(name: "CIGaussianBlur") {
+            blur.setValue(spotlightInBlurRadius, forKey: kCIInputRadiusKey)
+            container.layer?.filters = [blur]
+            container.layer?.masksToBounds = false
         }
-        RunLoop.main.add(springTimer!, forMode: .common)
-        } // end DispatchQueue.main.async (background sample delay)
+
+        panel.orderFrontRegardless()
+        panel.invalidateShadow()
+
+        // 延迟一帧，让 glass/effect view 先采样背景，避免首帧白色 fallback。
+        DispatchQueue.main.async { [weak self, weak panel] in
+            guard let self, let panel, self.panel === panel else { return }
+            if self.waveformVisible {
+                self.waveformView?.restartAnimating()
+            } else {
+                self.waveformView?.stopAnimating()
+                self.waveformView?.alphaValue = 0
+            }
+
+            let blurAnim = CABasicAnimation(keyPath: "filters.CIGaussianBlur.inputRadius")
+            blurAnim.fromValue = self.spotlightInBlurRadius
+            blurAnim.toValue = 0.0
+            blurAnim.duration = motion.blurIn
+            blurAnim.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            blurAnim.fillMode = .forwards
+            blurAnim.isRemovedOnCompletion = false
+            container.layer?.add(blurAnim, forKey: "spotlightBlurIn")
+
+            self.springTimer?.invalidate()
+            let startedAt = CACurrentMediaTime()
+            let duration = self.usesSingleBounceSpotlightAnimation ? min(motion.scaleIn, 0.22) : motion.scaleIn
+            let dt = self.spotlightFrameInterval
+            self.springTimer = Timer(timeInterval: dt, repeats: true) { [weak self, weak panel] timer in
+                guard let self, let panel, self.panel === panel else {
+                    timer.invalidate()
+                    return
+                }
+
+                let elapsed = CACurrentMediaTime() - startedAt
+                let progress = min(1, CGFloat(elapsed / duration))
+                let scales = self.spotlightInScales(progress: progress)
+                panel.setFrame(self.panelFrame(forVisualFrame: self.visualFrame(targetFrame, widthScale: scales.width, heightScale: scales.height)), display: false)
+                self.layoutAnimationSurface(in: panel)
+
+                panel.alphaValue = min(1, CGFloat(elapsed / motion.fadeIn))
+                let contentDelay: TimeInterval = 0.025
+                let contentFade = max(0, CGFloat((elapsed - contentDelay) / max(0.001, motion.fadeIn)))
+                container.alphaValue = min(1, contentFade)
+                self.waveformView?.alphaValue = self.waveformVisible ? container.alphaValue : 0
+
+                if progress >= 1 {
+                    timer.invalidate()
+                    self.springTimer = nil
+                    panel.setFrame(self.panelFrame(forVisualFrame: targetFrame), display: false)
+                    self.layoutAnimationSurface(in: panel)
+                    panel.alphaValue = 1
+                    container.alphaValue = 1
+                    self.waveformView?.alphaValue = self.waveformVisible ? 1 : 0
+                    container.layer?.filters = nil
+                    container.layer?.removeAnimation(forKey: "spotlightBlurIn")
+                    panel.invalidateShadow()
+                }
+            }
+            RunLoop.main.add(self.springTimer!, forMode: .common)
+        }
     }
 
     // MARK: - 无动画入场
@@ -297,8 +451,16 @@ final class CapsuleWindowController {
         // 清空任何残留 filter
         contentView?.layer?.filters = nil
         contentView?.layer?.removeAllAnimations()
+        contentView?.alphaValue = 1
+        waveformView?.alphaValue = waveformVisible ? 1 : 0
+        if waveformVisible {
+            waveformView?.restartAnimating()
+        } else {
+            waveformView?.stopAnimating()
+        }
 
-        panel.setFrame(targetFrame, display: false)
+        panel.setFrame(panelFrame(forVisualFrame: targetFrame), display: false)
+        layoutAnimationSurface(in: panel)
         panel.alphaValue = 1
 
         // 三重禁用：CATransaction + NSAnimationContext + animator duration
@@ -335,22 +497,34 @@ final class CapsuleWindowController {
 
     private func animateInMinimal(panel: NSPanel, targetFrame: NSRect) {
         panel.contentView?.wantsLayer = true
+        animationSurfaceView?.wantsLayer = true
         panel.alphaValue = 0
-        var start = targetFrame; start.origin.y -= 8
+        contentView?.alphaValue = 0
+        var start = panelFrame(forVisualFrame: targetFrame); start.origin.y -= 8
         panel.setFrame(start, display: false)
-        panel.contentView?.layer?.transform = CATransform3DMakeScale(0.92, 0.92, 1.0)
+        layoutAnimationSurface(in: panel)
+        animationSurfaceView?.layer?.transform = CATransform3DMakeScale(0.92, 0.92, 1.0)
         panel.orderFrontRegardless()
 
         // 延迟一帧，让 visual effect view 先采样背景
-        DispatchQueue.main.async {
-        NSAnimationContext.runAnimationGroup({ ctx in
-            ctx.duration = 0.2
-            ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            ctx.allowsImplicitAnimation = true
-            panel.animator().alphaValue = 1
-            panel.animator().setFrame(targetFrame, display: true)
-            panel.contentView?.layer?.transform = CATransform3DIdentity
-        })
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            if self.waveformVisible {
+                self.waveformView?.restartAnimating()
+            } else {
+                self.waveformView?.stopAnimating()
+                self.waveformView?.alphaValue = 0
+            }
+            NSAnimationContext.runAnimationGroup({ ctx in
+                ctx.duration = 0.2
+                ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                ctx.allowsImplicitAnimation = true
+                panel.animator().alphaValue = 1
+                self.contentView?.animator().alphaValue = 1
+                self.waveformView?.animator().alphaValue = self.waveformVisible ? 1 : 0
+                panel.animator().setFrame(self.panelFrame(forVisualFrame: targetFrame), display: true)
+                self.animationSurfaceView?.layer?.transform = CATransform3DIdentity
+            })
         } // end DispatchQueue.main.async
     }
 
@@ -360,30 +534,66 @@ final class CapsuleWindowController {
         waveformView?.updateBands(bands)
     }
 
-    func updateText(_ text: String) {
-        guard let label = textLabel, let panel = panel else { return }
+    /// 下载等不需要波形的场景调用
+    func hideWaveform() {
+        waveformVisible = false
+        waveformView?.stopAnimating()
+        waveformView?.alphaValue = 0
+    }
+
+    func showWaveform() {
+        waveformVisible = true
+        waveformView?.alphaValue = 1
+        waveformView?.restartAnimating()
+    }
+
+    func updateText(_ text: String, completion: (() -> Void)? = nil) {
+        guard let label = textLabel, let panel = panel else { completion?(); return }
         // 确保文字颜色恢复为默认（showError 会改为红色）
         label.textColor = .labelColor
         label.stringValue = text
+        label.isHidden = false
 
         let measured = (text as NSString).size(withAttributes: [.font: label.font!])
         let tw = min(max(measured.width + 18, minTextWidth), maxTextWidth)
         let totalWidth = fullWidth(forTextWidth: tw)
 
         let screen = NSScreen.main?.visibleFrame ?? .zero
-        var frame = panel.frame
-        frame.size.width = totalWidth
-        frame.origin.x = screen.midX - totalWidth / 2
+        var visualFrame = panel.frame.insetBy(dx: activeAnimationInset, dy: activeAnimationInset)
+        visualFrame.size.width = totalWidth
+        visualFrame.origin.x = screen.midX - totalWidth / 2
+        let frame = panelFrame(forVisualFrame: visualFrame)
 
         if animationStyle == "none" {
             panel.setFrame(frame, display: false)
+            completion?()
         } else {
             NSAnimationContext.runAnimationGroup({ ctx in
-                ctx.duration = 0.2
-                ctx.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                ctx.duration = animationStyle == "dynamicIsland" ? 0.16 : 0.2
+                ctx.timingFunction = animationStyle == "dynamicIsland"
+                    ? CAMediaTimingFunction(controlPoints: 0.16, 1.0, 0.3, 1.0)
+                    : CAMediaTimingFunction(name: .easeInEaseOut)
                 panel.animator().setFrame(frame, display: true)
-            })
+            }, completionHandler: completion)
         }
+    }
+
+    func showProgress(_ text: String, hidesWaveform: Bool = true) {
+        stopShimmer()
+        refiningLabel?.isHidden = true
+        textLabel?.isHidden = false
+        if hidesWaveform { hideWaveform() }
+        // 等 panel 宽度动画结束后再应用扫光，确保 clipLayer 与胶囊实际宽度一致
+        updateText(text) { [weak self] in
+            self?.applyShimmerToCapsule()
+        }
+    }
+
+    func showRecording() {
+        stopShimmer()
+        refiningLabel?.isHidden = true
+        textLabel?.isHidden = true
+        showWaveform()
     }
 
     /// 显示错误提示，一段时间后自动消失。
@@ -412,7 +622,7 @@ final class CapsuleWindowController {
     // 无论底层是 NSGlassEffectView 还是 NSVisualEffectView，都能精确裁剪为胶囊轮廓
 
     private func applyShimmerToCapsule() {
-        guard let cv = panel?.contentView else { return }
+        guard let cv = animationSurfaceView ?? panel?.contentView else { return }
         cv.wantsLayer = true
         guard let rootLayer = cv.layer else { return }
 
@@ -474,62 +684,56 @@ final class CapsuleWindowController {
         }
     }
 
-    // MARK: - 灵动岛退场：弹簧收缩 + 下移 + 模糊消失
+    // MARK: - Spotlight 退场：快速内收 + 淡出 + 模糊增强
 
     private func dismissSpring(panel: NSPanel, completion: (() -> Void)?) {
-        // 目标：正圆形小胶囊，向下 20pt
-        let endFrame = NSRect(
-            x: panel.frame.midX - pillWidth / 2,
-            y: panel.frame.minY - 20,
-            width: pillWidth,
-            height: capsuleHeight
-        )
+        let motion = spotlightMotion
+        let container = contentView
 
-        // 模糊增强
-        if let container = contentView {
+        panel.contentView?.wantsLayer = true
+        animationSurfaceView?.wantsLayer = true
+        animationSurfaceView?.layer?.removeAllAnimations()
+        animationSurfaceView?.layer?.transform = CATransform3DIdentity
+        container?.layer?.removeAnimation(forKey: "spotlightBlurIn")
+
+        if let container, let blur = CIFilter(name: "CIGaussianBlur") {
             container.wantsLayer = true
-            let blur = CIFilter(name: "CIGaussianBlur")!
             blur.setValue(0.0, forKey: kCIInputRadiusKey)
             container.layer?.filters = [blur]
             container.layer?.masksToBounds = false
-            let ba = CABasicAnimation(keyPath: "filters.CIGaussianBlur.inputRadius")
-            ba.fromValue = 0.0; ba.toValue = 12.0
-            ba.duration = 0.22
-            ba.timingFunction = CAMediaTimingFunction(name: .easeIn)
-            ba.fillMode = .forwards; ba.isRemovedOnCompletion = false
-            container.layer?.add(ba, forKey: "blurOut")
+
+            let blurAnim = CABasicAnimation(keyPath: "filters.CIGaussianBlur.inputRadius")
+            blurAnim.fromValue = 0.0
+            blurAnim.toValue = spotlightOutBlurRadius
+            blurAnim.duration = motion.fadeOut
+            blurAnim.timingFunction = CAMediaTimingFunction(name: .easeIn)
+            blurAnim.fillMode = .forwards
+            blurAnim.isRemovedOnCompletion = false
+            container.layer?.add(blurAnim, forKey: "spotlightBlurOut")
         }
 
-        // 退场用弹簧（阻尼更高=更紧，无回弹）
-        let kD: CGFloat = 320, cD: CGFloat = 40
-        let dt: CGFloat = 1.0 / 120.0
-        var elapsed: CGFloat = 0
-        let maxTime: CGFloat = 0.5
-
-        var sx = panel.frame.origin.x, vx: CGFloat = 0
-        var sy = panel.frame.origin.y, vy: CGFloat = 0
-        var sw = panel.frame.width,    vw: CGFloat = 0
-        let tx = endFrame.origin.x, ty = endFrame.origin.y, tw = endFrame.width
-
+        let startFrame = panel.frame.insetBy(dx: activeAnimationInset, dy: activeAnimationInset)
         springTimer?.invalidate()
-        springTimer = Timer(timeInterval: Double(dt), repeats: true) { [weak self] timer in
-            guard let self else { timer.invalidate(); return }
-            elapsed += dt
-
-            func step(_ x: inout CGFloat, _ v: inout CGFloat, _ target: CGFloat) {
-                let a = -kD * (x - target) - cD * v
-                v += a * dt; x += v * dt
+        let startedAt = CACurrentMediaTime()
+        let duration = usesSingleBounceSpotlightAnimation ? min(motion.scaleOut, 0.09) : motion.scaleOut
+        let dt = spotlightFrameInterval
+        springTimer = Timer(timeInterval: dt, repeats: true) { [weak self, weak panel] timer in
+            guard let self, let panel, self.panel === panel else {
+                timer.invalidate()
+                return
             }
-            step(&sx, &vx, tx); step(&sy, &vy, ty); step(&sw, &vw, tw)
 
-            let alpha = max(0, 1.0 - elapsed / 0.22)
-            panel.alphaValue = alpha
-            panel.setFrame(NSRect(x: sx, y: sy, width: sw, height: self.capsuleHeight), display: false)
+            let elapsed = CACurrentMediaTime() - startedAt
+            let progress = min(1, CGFloat(elapsed / duration))
+            let scale = self.spotlightOutScale(progress: progress, motion: motion)
+            panel.setFrame(self.panelFrame(forVisualFrame: self.visualFrame(startFrame, scaledBy: scale)), display: false)
+            self.layoutAnimationSurface(in: panel)
+            panel.alphaValue = max(0, 1 - CGFloat(elapsed / motion.fadeOut))
 
-            let settled = elapsed > maxTime || alpha <= 0
-            if settled {
+            if progress >= 1 {
                 timer.invalidate()
                 self.springTimer = nil
+                panel.alphaValue = 0
                 panel.orderOut(nil)
                 self.cleanup()
                 completion?()
@@ -548,7 +752,7 @@ final class CapsuleWindowController {
             ctx.allowsImplicitAnimation = true
             panel.animator().alphaValue = 0
             panel.animator().setFrame(end, display: true)
-            panel.contentView?.layer?.transform = CATransform3DMakeScale(0.92, 0.92, 1.0)
+            animationSurfaceView?.layer?.transform = CATransform3DMakeScale(0.92, 0.92, 1.0)
         }, completionHandler: { [weak self] in
             panel.orderOut(nil)
             self?.cleanup()
@@ -587,12 +791,16 @@ final class CapsuleWindowController {
         elapsedTimer = nil
         timerLabel = nil
         recordingStartTime = nil
+        debugTimerVisible = false
         #endif
         waveformView?.stopAnimating()
         waveformView = nil
         textLabel = nil
         refiningLabel = nil
         contentView = nil
+        animationSurfaceView = nil
+        activeAnimationInset = 0
+        waveformVisible = true
         panel = nil
     }
 }

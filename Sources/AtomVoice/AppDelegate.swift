@@ -1,6 +1,7 @@
 import Cocoa
 import AVFoundation
 import Speech
+import os.log
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var menuBarController: MenuBarController!
@@ -11,12 +12,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var capsuleWindow: CapsuleWindowController!
     private var textInjector: TextInjector!
     private var llmRefiner: LLMRefiner!
+    private var volumeController: VolumeController!
+    private var memoryPressureSource: DispatchSourceMemoryPressure?
     private var isRecording = false
     private var currentRecordingEngine = "apple"
     private var liveInsertionActive = false
     private var liveInsertionCommittedText = ""
     private var liveInsertionLatestText = ""
     private var liveInsertionPasteInFlight = false
+
+    deinit {
+        memoryPressureSource?.cancel()
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         terminateOtherRunningInstances()
@@ -37,7 +44,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             "silenceDuration": 2.0,
             "silenceThreshold": -40.0,
             "triggerKeyCode": 63,
+            "lowerVolumeOnRecording": false,
+            "sherpaModelsReady": false,
         ])
+        selfHealSherpaModelsReadyIfNeeded()
 
         requestPermissions()
 
@@ -47,6 +57,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         audioEngine = AudioEngineController()
         speechRecognizer = SpeechRecognizerController()
         sherpaRecognizer = SherpaOnnxRecognizerController()
+        volumeController = VolumeController()
 
         menuBarController = MenuBarController(
             onLanguageChanged: { [weak self] in
@@ -54,6 +65,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             },
             llmRefiner: llmRefiner
         )
+        menuBarController.onSherpaDownloadRequested = { [weak self] in
+            self?.startSherpaDownload()
+        }
 
         audioEngine.onSilenceTimeout = { [weak self] in self?.stopRecording() }
 
@@ -99,6 +113,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             UpdateChecker.shared.checkForUpdates(silent: true)
         }
 
+        // 监听系统内存压力，仅在内存严重不足时释放模型
+        memoryPressureSource = DispatchSource.makeMemoryPressureSource(eventMask: [.critical], queue: .main)
+        memoryPressureSource?.setEventHandler { [weak self] in
+            guard let self else { return }
+            guard !self.isRecording else { return }
+            print("[AppDelegate] 系统内存压力，释放 Sherpa 模型")
+            self.sherpaRecognizer.releaseModels()
+        }
+        memoryPressureSource?.resume()
+
         // 监听前台应用切换：录音期间切换程序则取消录音
         NSWorkspace.shared.notificationCenter.addObserver(
             self,
@@ -141,25 +165,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Window activation helpers
 
-    /// 在 LSUIElement=true 的菜单栏应用里，窗口/弹窗要先切到可激活状态，
-    /// 再显式激活当前 app 并把目标窗口提到最前。
+    /// 在 LSUIElement=true 的菜单栏应用里，先把窗口移动到当前 Space，
+    /// 再显示和激活，避免在全屏 app 中打开窗口时跳回桌面。
     static func bringToFront(_ window: NSWindow) {
-        activateForForegroundInteraction()
+        bringToFront(window, transient: false)
+    }
+
+    /// 从状态栏菜单打开的辅助窗口应留在当前 Space，包括其他 app 的全屏 Space。
+    static func bringToFrontInCurrentSpace(_ window: NSWindow) {
+        bringToFront(window, transient: true)
+    }
+
+    private static func bringToFront(_ window: NSWindow, transient: Bool) {
+        NSApp.setActivationPolicy(.regular)
+        NSApp.unhide(nil)
+        var behavior: NSWindow.CollectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
+        if transient { behavior.insert(.transient) }
+        window.collectionBehavior.formUnion(behavior)
         window.orderFrontRegardless()
         window.makeKeyAndOrderFront(nil)
+        NSApp.activate()
 
-        // 菜单项 action 执行时菜单还在收起过程中，下一轮 runloop 再抢一次焦点更稳定。
+        // 菜单收起后一帧再确认一次，避免状态栏菜单焦点覆盖窗口焦点。
         DispatchQueue.main.async {
-            activateForForegroundInteraction()
             window.orderFrontRegardless()
             window.makeKeyAndOrderFront(nil)
+            NSApp.activate()
         }
     }
 
     @discardableResult
     static func runModalAlert(_ alert: NSAlert) -> NSApplication.ModalResponse {
-        activateForForegroundInteraction()
+        NSApp.setActivationPolicy(.regular)
+        NSApp.unhide(nil)
         alert.window.level = .modalPanel
+        alert.window.collectionBehavior.formUnion([.moveToActiveSpace, .fullScreenAuxiliary, .transient])
         let response = alert.runModal()
         resetActivationIfNeeded()
         return response
@@ -220,6 +260,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return
         }
+
+        // Sherpa 引擎：优先读缓存标记，只有标记为 false 时才做一次自愈检查。
+        let engine = UserDefaults.standard.string(forKey: "recognitionEngine") ?? "apple"
+        if engine == "sherpaOnnx" {
+            if !UserDefaults.standard.bool(forKey: "sherpaModelsReady") {
+                if !selfHealSherpaModelsReadyIfNeeded() {
+                    if SherpaModelDownloader.shared.isDownloading { return }
+                    DispatchQueue.main.async { [weak self] in
+                        self?.promptSherpaDownload()
+                    }
+                    return
+                }
+            }
+        }
         
         // 取消正在进行的 LLM 处理（如果有）
         llmRefiner.cancel()
@@ -234,34 +288,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         liveInsertionLatestText = ""
         liveInsertionPasteInFlight = false
 
+        let lowerVolume = UserDefaults.standard.bool(forKey: "lowerVolumeOnRecording")
+        os_log(.error, "[AppDelegate] startRecording: lowerVolume=%d, vc=%@", lowerVolume, volumeController != nil ? "yes" : "nil")
+        if lowerVolume {
+            volumeController.saveAndDecreaseVolume()
+        }
+
         DispatchQueue.main.async { [self] in
             capsuleWindow.show()
 
             if currentRecordingEngine == "sherpaOnnx" {
-                if let error = sherpaRecognizer.start(onResult: { [weak self] text, _ in
-                    DispatchQueue.main.async {
-                        self?.capsuleWindow.updateText(text)
+                if sherpaRecognizer.isModelLoaded {
+                    // 模型已缓存，直接开始录音，不显示加载动画
+                    startSherpaRecordingAfterModelLoad()
+                } else {
+                    // 首次加载模型，显示扫光加载动画
+                    capsuleWindow.showProgress(loc("sherpa.loadingModel"))
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [self] in
+                        guard isRecording, currentRecordingEngine == "sherpaOnnx" else { return }
+                        startSherpaRecordingAfterModelLoad()
                     }
-                }) {
-                    isRecording = false
-                    fnKeyMonitor.isRecording = false
-                    capsuleWindow.showError(error, dismissAfter: 6)
-                    return
-                }
-
-                if !audioEngine.start(
-                    bandsHandler: { [weak self] bands in
-                        DispatchQueue.main.async {
-                            self?.capsuleWindow.updateBands(bands)
-                        }
-                    },
-                    recognitionRequest: nil,
-                    audioBufferHandler: { [weak self] buffer, _ in
-                        self?.sherpaRecognizer.accept(buffer: buffer)
-                    }
-                ) {
-                    _ = sherpaRecognizer.stop()
-                    handleAudioStartFailure()
                 }
             } else {
                 let request = speechRecognizer.start(
@@ -292,9 +338,55 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    private func startSherpaRecordingAfterModelLoad() {
+        if let error = sherpaRecognizer.start(onResult: { [weak self] text, _ in
+            DispatchQueue.main.async {
+                self?.capsuleWindow.updateText(text)
+            }
+        }) {
+            isRecording = false
+            fnKeyMonitor.isRecording = false
+            volumeController.restoreVolume()
+            print("[SherpaOnnx] 模型加载失败: \(error)")
+
+            // 文件缺失或模型无法创建时，重置标记并提示重新下载。
+            if sherpaRecognizer.lastStartFailureKind == .missingRuntime ||
+                sherpaRecognizer.lastStartFailureKind == .missingModel ||
+                sherpaRecognizer.lastStartFailureKind == .invalidModel {
+                UserDefaults.standard.set(false, forKey: "sherpaModelsReady")
+                SherpaModelDownloader.printMissingRequiredFiles()
+                capsuleWindow.showError(error, dismissAfter: 3)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) { [weak self] in
+                    self?.promptSherpaReDownload()
+                }
+            } else {
+                // 文件存在但加载失败（dylib 问题等），只报错不重置标记
+                capsuleWindow.showError(error, dismissAfter: 6)
+            }
+            return
+        }
+
+        capsuleWindow.showRecording()
+        if !audioEngine.start(
+            bandsHandler: { [weak self] bands in
+                DispatchQueue.main.async {
+                    self?.capsuleWindow.updateBands(bands)
+                }
+            },
+            recognitionRequest: nil,
+            audioBufferHandler: { [weak self] buffer, _ in
+                self?.sherpaRecognizer.accept(buffer: buffer)
+            }
+        ) {
+            _ = sherpaRecognizer.stop()
+            handleAudioStartFailure()
+        }
+    }
+
     private func handleAudioStartFailure() {
         isRecording = false
         fnKeyMonitor.isRecording = false
+        volumeController.restoreVolume()
         liveInsertionActive = false
         liveInsertionCommittedText = ""
         liveInsertionLatestText = ""
@@ -306,6 +398,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard isRecording else { return }
         isRecording = false
         fnKeyMonitor.isRecording = false
+
+        volumeController.restoreVolume()
 
         DispatchQueue.main.async { [self] in
             let recognizedText = currentRecordingEngine == "sherpaOnnx" ? sherpaRecognizer.stop() : speechRecognizer.stop()
@@ -455,10 +549,81 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return PunctuationProcessor.process(rawText, language: lang)
     }
 
+    // MARK: - Sherpa 模型下载
+
+    @discardableResult
+    private func selfHealSherpaModelsReadyIfNeeded() -> Bool {
+        if UserDefaults.standard.bool(forKey: "sherpaModelsReady") { return true }
+
+        if SherpaModelDownloader.allModelsReady || SherpaModelDownloader.repairExtractedFilesIfNeeded() {
+            UserDefaults.standard.set(true, forKey: "sherpaModelsReady")
+            print("[SherpaOnnx] 已检测到完整模型，自动修复 sherpaModelsReady = true")
+            return true
+        }
+
+        return false
+    }
+
+    private func startSherpaDownload() {
+        guard !SherpaModelDownloader.shared.isDownloading else { return }
+        if UserDefaults.standard.bool(forKey: "sherpaModelsReady") { return }
+        if selfHealSherpaModelsReadyIfNeeded() { return }
+
+        let downloader = SherpaModelDownloader.shared
+
+        // 显示胶囊（不显示波形）
+        capsuleWindow.show(showRecordingTimer: false)
+        capsuleWindow.showProgress(loc("sherpa.downloading.start"))
+
+        downloader.onProgress = { [weak self] current, total, _, message in
+            self?.capsuleWindow.updateText(message)
+        }
+
+        downloader.onComplete = { [weak self] success, error in
+            guard let self else { return }
+            if success {
+                self.capsuleWindow.updateText(loc("sherpa.download.complete"))
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    self.capsuleWindow.dismiss()
+                }
+            } else {
+                self.capsuleWindow.showError(loc("sherpa.download.failed", error ?? "Unknown error"), dismissAfter: 6)
+            }
+        }
+
+        downloader.startDownload()
+    }
+
+    private func promptSherpaDownload() {
+        let alert = NSAlert()
+        alert.messageText = loc("sherpa.download.title")
+        alert.informativeText = loc("sherpa.download.message")
+        alert.icon = NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: nil)
+        alert.addButton(withTitle: loc("sherpa.download.confirm"))
+        alert.addButton(withTitle: loc("common.cancel"))
+        if AppDelegate.runModalAlert(alert) == .alertFirstButtonReturn {
+            startSherpaDownload()
+        }
+    }
+
+    private func promptSherpaReDownload() {
+        let alert = NSAlert()
+        alert.messageText = loc("sherpa.download.title")
+        alert.informativeText = loc("sherpa.redownload.message")
+        alert.icon = NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: nil)
+        alert.addButton(withTitle: loc("sherpa.download.confirm"))
+        alert.addButton(withTitle: loc("common.cancel"))
+        if AppDelegate.runModalAlert(alert) == .alertFirstButtonReturn {
+            startSherpaDownload()
+        }
+    }
+
     /// ESC 取消录音：停止一切，不注入文字
     private func cancelRecording() {
         isRecording = false
         fnKeyMonitor.isRecording = false
+
+        volumeController.restoreVolume()
 
         DispatchQueue.main.async { [self] in
             llmRefiner.cancel()
@@ -481,6 +646,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard isRecording else { return }
         isRecording = false
         fnKeyMonitor.isRecording = false
+
+        volumeController.restoreVolume()
 
         DispatchQueue.main.async { [self] in
             let recognizedText = currentRecordingEngine == "sherpaOnnx" ? sherpaRecognizer.stop() : speechRecognizer.stop()

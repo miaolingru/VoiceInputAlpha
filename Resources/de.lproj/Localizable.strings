@@ -26,6 +26,7 @@
 "menu.settings" = "Einstellungen...";
 "menu.quit" = "Beenden";
 "common.ok" = "OK";
+"common.cancel" = "Abbrechen";
 
 /* Settings */
 "settings.title" = "LLM-Verfeinerung Einstellungen";
@@ -92,6 +93,19 @@
 "error.sherpaRuntimeMissing" = "Sherpa-Laufzeit nicht gefunden. Legen Sie die dylib-Dateien hier ab:\n%@";
 "error.sherpaModelMissing" = "Sherpa-Modell nicht gefunden. Legen Sie die Modelldateien hier ab:\n%@";
 "error.sherpaLoadFailed" = "Sherpa konnte nicht gestartet werden: %@";
+
+/* Sherpa-Download */
+"sherpa.download.title" = "Sherpa-Modell herunterladen";
+"sherpa.download.message" = "Die lokale Sherpa-Erkennung erfordert das Herunterladen von Modelldateien (~149 MB). Jetzt herunterladen?";
+"sherpa.download.confirm" = "Herunterladen";
+"sherpa.downloading.start" = "Vorbereitung des Sherpa-Modell-Downloads...";
+"sherpa.loadingModel" = "Sherpa-Modell wird geladen...";
+"sherpa.downloading" = "Sherpa-Modell wird heruntergeladen (%d/%d)...";
+"sherpa.downloading.progress" = "Sherpa-Modell wird heruntergeladen (%d/%d)... %d%%";
+"sherpa.extracting" = "Sherpa-Modell wird extrahiert (%d/%d)...";
+"sherpa.download.complete" = "Sherpa-Modell-Download abgeschlossen ✓";
+"sherpa.download.failed" = "Sherpa-Modell-Download fehlgeschlagen: %@";
+"sherpa.redownload.message" = "Sherpa-Modelldateien fehlen oder sind beschädigt. Erneut herunterladen?";
 
 /* Permissions */
 "permission.mic.title" = "Mikrofonzugriff erforderlich";
@@ -193,3 +207,35 @@
 "update.error.download" = "Download fehlgeschlagen: %@";
 "update.error.install" = "Installation fehlgeschlagen: %@";
 "update.beta" = "Beta";
+"menu.lowerVolumeOnRecording" = "Lautstärke während der Aufnahme senken";
+"menu.lowerVolumeOnRecording.tooltip" = "Systemlautstärke während der Aufnahme um 80% senken";
+
+/* Tooltips */
+"tooltip.provider.add" = "Neuen LLM-Anbieter hinzufügen";
+"tooltip.provider.delete" = "Ausgewählten LLM-Anbieter löschen";
+"tooltip.settings.provider" = "LLM-Anbieter für Textverfeinerung auswählen";
+"tooltip.settings.manage" = "Anbieterliste öffnen zum Hinzufügen, Löschen oder Bearbeiten";
+"tooltip.settings.baseURL" = "API-Endpunkt des LLM-Anbieters";
+"tooltip.settings.apiKey" = "API-Schlüssel des LLM-Anbieters";
+"tooltip.settings.model" = "Name des zu verwendenden LLM-Modells";
+"tooltip.settings.delay" = "Wartezeit nach der Erkennung vor der Texteingabe";
+"tooltip.settings.prompt" = "System-Prompt für das LLM anpassen";
+"tooltip.settings.test" = "LLM-API-Verbindung mit aktuellen Einstellungen testen";
+"tooltip.settings.save" = "Einstellungen speichern und Fenster schließen";
+"tooltip.prompt.reset" = "Standard-System-Prompt wiederherstellen";
+"tooltip.prompt.done" = "Prompt speichern und schließen";
+"tooltip.prompt.cancel" = "Änderungen verwerfen und schließen";
+"tooltip.permissions.reset" = "Mikrofon- und Spracherkennungsberechtigungen zurücksetzen (Neustart erforderlich)";
+"tooltip.about.bilibili" = "Bilibili-Seite im Browser öffnen";
+"tooltip.about.github" = "GitHub-Repository im Browser öffnen";
+
+/* Menu Tooltips */
+"tooltip.menu.punctuation" = "Automatisch Zeichensetzung zum erkannten Text hinzufügen";
+"tooltip.menu.llm" = "LLM verwenden, um Erkennungsfehler zu korrigieren und Text zu verfeinern";
+"tooltip.menu.inputMode" = "Wählen, wie die Spracheingabe ausgelöst wird: Tippen oder Halten";
+"tooltip.menu.triggerKey" = "Wählen, welche Taste die Spracheingabe auslöst";
+"tooltip.menu.audioInput" = "Mikrofon oder Eingabegerät auswählen";
+"tooltip.menu.lowerVolumeOnRecording" = "Systemlautstärke während der Aufnahme um 80% senken";
+"tooltip.menu.launchAtLogin" = "AtomVoice automatisch beim Anmelden starten";
+"tooltip.menu.help" = "Berechtigungsstatus und Fehlerbehebungsleitfaden anzeigen";
+"tooltip.menu.about" = "Versionsinformationen und Links anzeigen";

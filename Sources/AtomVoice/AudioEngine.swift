@@ -18,21 +18,24 @@ final class AudioEngineController {
     private let silenceGuardPeriod: Double = 0.5  // 录音前 0.5 秒不检测静音
 
     // FFT
-    private let fftSize = 2048
+    private let fftSize = 1024
     private var fftSetup: FFTSetup?
     private var hannWindow: [Float] = []
     private var sampleBuffer: [Float] = []
     private let bufferQueue = DispatchQueue(label: "com.atomvoice.audioBuffer")  // 保护 sampleBuffer 和静音检测状态
 
-    // 只覆盖人声核心频率范围 100–6000 Hz
-    // 男声基频 85-180Hz → 第2根；女声上共振峰 2000-4000Hz → 第4根
+    // 只用人声核心频率范围驱动视觉，避免低频震动/高频噪声把波形整体推起来。
+    // 频谱只判断人声存在感，最终仍映射为 logo 式居中分布。
     private let bandFreqRanges: [(Float, Float)] = [
-        (100,  280),   // 第1根 — 男声基频区
-        (280,  700),   // 第2根 — 男声低共振峰 F1（元音能量主体）
-        (700,  2000),  // 第3根 — 语音核心 F1/F2 重叠区，男女声均在此
-        (2000, 4000),  // 第4根 — 女声高共振峰 F2/F3
-        (4000, 6000),  // 第5根 — 辅音定义/齿音边缘
+        (100,  260),   // 第1根 — 男声低频轮廓
+        (260,  650),   // 第2根 — 低共振峰
+        (650,  1500),  // 第3根 — 元音主体
+        (1500, 2800),  // 第4根 — 清晰度与高共振峰
+        (2800, 4200),  // 第5根 — 辅音边缘，权重较低
     ]
+    private let visualBarProfile: [Float] = [0.40, 0.68, 1.0, 0.68, 0.40]
+    private let voicePresenceWeights: [Float] = [0.25, 0.85, 1.0, 0.75, 0.20]
+    private let bandNoiseFloors: [Float] = [-50, -57, -61, -64, -66]
 
     init() {
         let log2n = vDSP_Length(log2(Float(fftSize)))
@@ -316,29 +319,71 @@ final class AudioEngineController {
                 var norm = Float(halfSize)
                 vDSP_vsdiv(mags, 1, &norm, &mags, 1, vDSP_Length(halfSize))
 
-                // 按频率范围切分频段，取均值后转 dB，映射到 0-1
+                // 频谱只用于判断“有人声”和制造细微纹理，不再使用全频 RMS。
                 let freqPerBin = sampleRate / Float(self.fftSize)
-                return self.bandFreqRanges.enumerated().map { (i, range) in
+                let spectralLevels = self.bandFreqRanges.enumerated().map { (i, range) in
                     let (loFreq, hiFreq) = range
                     let loIdx = max(1, Int(loFreq / freqPerBin))
                     let hiIdx = min(halfSize - 1, Int(hiFreq / freqPerBin))
                     guard loIdx < hiIdx else { return Float(0) }
 
-                    let slice = mags[loIdx...hiIdx]
-                    let mean = slice.reduce(0, +) / Float(slice.count)
+                    let energy = self.bandEnergy(mags: mags, loIdx: loIdx, hiIdx: hiIdx)
 
-                    // 对数映射：各频段使用不同灵敏度
-                    // 第1根（超低频）不需要太灵敏，中间三根最灵敏，第5根齿音偏高
-                    let dB = 20.0 * log10(max(mean, 1e-7))
-                    let floors: [Float] = [-60, -65, -68, -65, -58]
-                    let floor = i < floors.count ? floors[i] : -65
-                    let range: Float = 48
-                    let normalized = (dB - floor) / range
-                    return max(0, min(1, normalized))
+                    let dB = 20.0 * log10(max(energy, 1e-7))
+                    let floor = i < self.bandNoiseFloors.count ? self.bandNoiseFloors[i] : -62
+                    return self.normalizedDecibels(dB, floor: floor, range: 40)
+                }
+
+                let spectralPresence = self.weightedAverage(spectralLevels, weights: self.voicePresenceWeights)
+                let voiceEnergy = self.voiceGate(spectralPresence)
+
+                return spectralLevels.enumerated().map { (i, spectral) in
+                    let profile = i < self.visualBarProfile.count ? self.visualBarProfile[i] : 1
+
+                    // 应用图标式分布：全人声居中，两侧随动但不抢视觉重心。
+                    let texture = 0.99 + spectral * 0.025
+                    return max(0, min(1, voiceEnergy * profile * texture))
                 }
             }
         }
 
         return bands
+    }
+
+    private func bandEnergy(mags: [Float], loIdx: Int, hiIdx: Int) -> Float {
+        var sum: Float = 0
+        var peak: Float = 0
+        let count = hiIdx - loIdx + 1
+
+        for idx in loIdx...hiIdx {
+            let value = mags[idx]
+            sum += value
+            if value > peak { peak = value }
+        }
+
+        let mean = sum / Float(count)
+        return mean * 0.50 + peak * 0.50
+    }
+
+    private func weightedAverage(_ values: [Float], weights: [Float]) -> Float {
+        var weightedSum: Float = 0
+        var totalWeight: Float = 0
+
+        for i in 0..<values.count {
+            let weight = i < weights.count ? weights[i] : 1
+            weightedSum += values[i] * weight
+            totalWeight += weight
+        }
+
+        guard totalWeight > 0 else { return 0 }
+        return weightedSum / totalWeight
+    }
+
+    private func voiceGate(_ level: Float) -> Float {
+        max(0, min(1, (level - 0.055) / 0.84))
+    }
+
+    private func normalizedDecibels(_ dB: Float, floor: Float, range: Float) -> Float {
+        max(0, min(1, (dB - floor) / range))
     }
 }

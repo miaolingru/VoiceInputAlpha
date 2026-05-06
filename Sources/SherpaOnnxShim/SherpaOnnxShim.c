@@ -337,6 +337,18 @@ void AtomVoiceSherpaDestroy(AtomVoiceSherpaContext *context) {
   free(context);
 }
 
+int32_t AtomVoiceSherpaResetStream(AtomVoiceSherpaContext *context) {
+  if (!context || !context->recognizer) { return 0; }
+
+  if (context->stream && context->destroy_stream) {
+    context->destroy_stream(context->stream);
+    context->stream = NULL;
+  }
+
+  context->stream = context->create_stream(context->recognizer);
+  return context->stream ? 1 : 0;
+}
+
 void AtomVoiceSherpaFreeString(char *text) {
   free(text);
 }

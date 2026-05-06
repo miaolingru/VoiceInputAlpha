@@ -246,6 +246,7 @@ final class PermissionsWindowController: NSObject {
         vStack.setCustomSpacing(8, after: troubleLabel)
 
         let resetBtn = NSButton(title: loc("permissions.reset"), target: self, action: #selector(resetPermissions))
+        resetBtn.toolTip = loc("tooltip.permissions.reset")
         resetBtn.bezelStyle = .rounded
         vStack.addArrangedSubview(resetBtn)
         vStack.setCustomSpacing(22, after: resetBtn)

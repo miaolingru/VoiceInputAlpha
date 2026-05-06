@@ -26,6 +26,7 @@
 "menu.settings" = "設定...";
 "menu.quit" = "終了";
 "common.ok" = "OK";
+"common.cancel" = "キャンセル";
 
 /* Settings */
 "settings.title" = "LLM テキスト最適化設定";
@@ -92,6 +93,19 @@
 "error.sherpaRuntimeMissing" = "Sherpa ランタイムが見つかりません。dylib ファイルを次の場所に置いてください：\n%@";
 "error.sherpaModelMissing" = "Sherpa モデルが見つかりません。モデルファイルを次の場所に置いてください：\n%@";
 "error.sherpaLoadFailed" = "Sherpa の起動に失敗しました：%@";
+
+/* Sherpa ダウンロード */
+"sherpa.download.title" = "Sherpa モデルをダウンロード";
+"sherpa.download.message" = "Sherpa ローカル認識にはモデルファイルのダウンロードが必要です（約149 MB）。ダウンロードしますか？";
+"sherpa.download.confirm" = "ダウンロード";
+"sherpa.downloading.start" = "Sherpa モデルのダウンロードを準備中...";
+"sherpa.loadingModel" = "Sherpa モデルを読み込み中...";
+"sherpa.downloading" = "Sherpa モデルをダウンロード中 (%d/%d)...";
+"sherpa.downloading.progress" = "Sherpa モデルをダウンロード中 (%d/%d)... %d%%";
+"sherpa.extracting" = "Sherpa モデルを解凍中 (%d/%d)...";
+"sherpa.download.complete" = "Sherpa モデルのダウンロード完了 ✓";
+"sherpa.download.failed" = "Sherpa モデルのダウンロード失敗：%@";
+"sherpa.redownload.message" = "Sherpa モデルファイルが見つからないか破損しています。再ダウンロードしますか？";
 
 /* Permissions */
 "permission.mic.title" = "マイクへのアクセスが必要です";
@@ -193,3 +207,35 @@
 "update.error.download" = "ダウンロードに失敗しました：%@";
 "update.error.install" = "インストールに失敗しました：%@";
 "update.beta" = "ベータ";
+"menu.lowerVolumeOnRecording" = "録音中にシステム音量を下げる";
+"menu.lowerVolumeOnRecording.tooltip" = "録音中にシステム音量を80%下げる";
+
+/* Tooltips */
+"tooltip.provider.add" = "新しい LLM プロバイダーを追加";
+"tooltip.provider.delete" = "選択した LLM プロバイダーを削除";
+"tooltip.settings.provider" = "LLM テキスト最適化のプロバイダーを選択";
+"tooltip.settings.manage" = "プロバイダー一覧を開いて追加・削除・編集";
+"tooltip.settings.baseURL" = "LLM プロバイダーの API エンドポイント";
+"tooltip.settings.apiKey" = "LLM プロバイダーの API キー";
+"tooltip.settings.model" = "使用する LLM モデル名";
+"tooltip.settings.delay" = "認識完了後、テキストを注入するまでの待機時間（不完全な結果の注入を防ぎます）";
+"tooltip.settings.prompt" = "LLM に送るシステムプロンプトをカスタマイズ";
+"tooltip.settings.test" = "現在の設定で LLM API 接続をテスト";
+"tooltip.settings.save" = "設定を保存してウィンドウを閉じる";
+"tooltip.prompt.reset" = "デフォルトのシステムプロンプトに戻す";
+"tooltip.prompt.done" = "プロンプトを保存して閉じる";
+"tooltip.prompt.cancel" = "変更を破棄して閉じる";
+"tooltip.permissions.reset" = "マイクと音声認識の権限をリセット（再起動が必要）";
+"tooltip.about.bilibili" = "ブラウザで Bilibili ページを開く";
+"tooltip.about.github" = "ブラウザで GitHub リポジトリを開く";
+
+/* Menu Tooltips */
+"tooltip.menu.punctuation" = "認識完了後にテキストに句読点を自動追加";
+"tooltip.menu.llm" = "LLM を使って認識エラーを修正しテキストを最適化";
+"tooltip.menu.inputMode" = "音声入力のトリガー方法を選択：クリックまたは長押し";
+"tooltip.menu.triggerKey" = "音声入力をトリガーするキーを選択";
+"tooltip.menu.audioInput" = "マイクまたは入力デバイスを選択";
+"tooltip.menu.lowerVolumeOnRecording" = "録音中にシステム音量を 80% 下げる";
+"tooltip.menu.launchAtLogin" = "ログイン時に原子微声を自動起動";
+"tooltip.menu.help" = "権限の状態とトラブルシューティングを表示";
+"tooltip.menu.about" = "バージョン情報とリンクを表示";

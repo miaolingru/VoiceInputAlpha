@@ -96,11 +96,13 @@ final class ProviderEditorController: NSObject, NSTableViewDataSource, NSTableVi
 
         // +/- 按钮
         let addBtn = NSButton(title: "+", target: self, action: #selector(addRow))
+        addBtn.toolTip = loc("tooltip.provider.add")
         addBtn.translatesAutoresizingMaskIntoConstraints = false
         addBtn.bezelStyle = .rounded
         cv.addSubview(addBtn)
 
         let delBtn = NSButton(title: "−", target: self, action: #selector(deleteRow))
+        delBtn.toolTip = loc("tooltip.provider.delete")
         delBtn.translatesAutoresizingMaskIntoConstraints = false
         delBtn.bezelStyle = .rounded
         cv.addSubview(delBtn)
@@ -320,17 +322,20 @@ final class PromptEditorController: NSObject, NSTextViewDelegate {
         cv.addSubview(scroll)
 
         let resetBtn = NSButton(title: loc("settings.prompt.reset"), target: self, action: #selector(resetDefault))
+        resetBtn.toolTip = loc("tooltip.prompt.reset")
         resetBtn.translatesAutoresizingMaskIntoConstraints = false
         resetBtn.bezelStyle = .rounded
         cv.addSubview(resetBtn)
 
         let doneBtn = NSButton(title: loc("settings.prompt.done"), target: self, action: #selector(done))
+        doneBtn.toolTip = loc("tooltip.prompt.done")
         doneBtn.translatesAutoresizingMaskIntoConstraints = false
         doneBtn.bezelStyle = .rounded
         doneBtn.keyEquivalent = "\r"
         cv.addSubview(doneBtn)
 
         let cancelBtn = NSButton(title: loc("settings.prompt.cancel"), target: self, action: #selector(cancel))
+        cancelBtn.toolTip = loc("tooltip.prompt.cancel")
         cancelBtn.translatesAutoresizingMaskIntoConstraints = false
         cancelBtn.bezelStyle = .rounded
         cancelBtn.keyEquivalent = "\u{1b}"
@@ -434,28 +439,37 @@ final class SettingsWindowController: NSObject {
         providerPopup = NSPopUpButton()
         providerPopup.target = self
         providerPopup.action = #selector(providerChanged(_:))
+        providerPopup.toolTip = loc("tooltip.settings.provider")
         providers.forEach { providerPopup.addItem(withTitle: $0.name) }
 
         let manageBtn = makeButton(loc("settings.manage"), action: #selector(editProviders(_:)))
+        manageBtn.toolTip = loc("tooltip.settings.manage")
 
         apiBaseURLField = makeField(placeholder: "https://api.openai.com/v1")
+        apiBaseURLField.toolTip = loc("tooltip.settings.baseURL")
         apiKeyField     = makeSecureField(placeholder: "sk-...")
+        apiKeyField.toolTip = loc("tooltip.settings.apiKey")
         modelField      = makeField(placeholder: "gpt-4o-mini")
+        modelField.toolTip = loc("tooltip.settings.model")
 
         delayPopup = NSPopUpButton()
+        delayPopup.toolTip = loc("tooltip.settings.delay")
         for v in delayOptions {
             delayPopup.addItem(withTitle: v == 0 ? loc("settings.delay.immediate") : String(format: "%.1fs", v))
         }
 
         let promptBtn = makeButton(loc("settings.prompt.edit"), action: #selector(editPrompt(_:)))
+        promptBtn.toolTip = loc("tooltip.settings.prompt")
 
         statusLabel = NSTextField(labelWithString: "")
         statusLabel.font = .systemFont(ofSize: 12)
         statusLabel.textColor = .secondaryLabelColor
 
         let testBtn   = makeButton(loc("settings.test"),   action: #selector(testConnection(_:)))
+        testBtn.toolTip = loc("tooltip.settings.test")
         let cancelBtn = makeButton(loc("settings.cancel"), action: #selector(cancelSettings(_:)))
         let saveBtn   = makeButton(loc("settings.save"),   action: #selector(saveSettings(_:)), isPrimary: true)
+        saveBtn.toolTip = loc("tooltip.settings.save")
         saveBtn.keyEquivalent   = "\r"
         cancelBtn.keyEquivalent = "\u{1b}"
 

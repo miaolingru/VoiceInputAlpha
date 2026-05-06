@@ -26,6 +26,7 @@
 "menu.settings" = "设置...";
 "menu.quit" = "退出";
 "common.ok" = "确定";
+"common.cancel" = "取消";
 
 /* Settings */
 "settings.title" = "LLM 文本优化设置";
@@ -92,6 +93,19 @@
 "error.sherpaRuntimeMissing" = "未找到 Sherpa 运行库，请将 dylib 文件放到：\n%@";
 "error.sherpaModelMissing" = "未找到 Sherpa 模型，请将模型文件放到：\n%@";
 "error.sherpaLoadFailed" = "Sherpa 启动失败：%@";
+
+/* Sherpa 下载 */
+"sherpa.download.title" = "下载 Sherpa 模型";
+"sherpa.download.message" = "Sherpa 本地识别需要下载模型文件（约 149 MB），是否现在下载？";
+"sherpa.download.confirm" = "下载";
+"sherpa.downloading.start" = "正在准备下载 Sherpa 模型...";
+"sherpa.loadingModel" = "正在加载 Sherpa 模型...";
+"sherpa.downloading" = "正在下载 Sherpa 模型 (%d/%d)...";
+"sherpa.downloading.progress" = "正在下载 Sherpa 模型 (%d/%d)... %d%%";
+"sherpa.extracting" = "正在解压 Sherpa 模型 (%d/%d)...";
+"sherpa.download.complete" = "Sherpa 模型下载完成 ✓";
+"sherpa.download.failed" = "Sherpa 模型下载失败：%@";
+"sherpa.redownload.message" = "Sherpa 模型文件缺失或损坏，是否重新下载？";
 
 /* Permissions */
 "permission.mic.title" = "需要麦克风权限";
@@ -194,3 +208,35 @@
 "update.error.download" = "下载失败：%@";
 "update.error.install" = "安装失败：%@";
 "update.beta" = "测试版";
+"menu.lowerVolumeOnRecording" = "录音时降低系统音量";
+"menu.lowerVolumeOnRecording.tooltip" = "录音期间将系统音量降低 80%";
+
+/* Tooltips */
+"tooltip.provider.add" = "添加新的 LLM 服务商";
+"tooltip.provider.delete" = "删除选中的 LLM 服务商";
+"tooltip.settings.provider" = "选择 LLM 文字润色服务商";
+"tooltip.settings.manage" = "打开服务商列表，可添加、删除或编辑";
+"tooltip.settings.baseURL" = "LLM 服务商的 API 地址";
+"tooltip.settings.apiKey" = "LLM 服务商的 API 密钥";
+"tooltip.settings.model" = "使用的 LLM 模型名称";
+"tooltip.settings.delay" = "识别完成后等待指定时间再注入文字，避免过早注入不完整结果";
+"tooltip.settings.prompt" = "自定义发送给 LLM 的系统提示词";
+"tooltip.settings.test" = "使用当前设置测试 LLM API 连接";
+"tooltip.settings.save" = "保存设置并关闭窗口";
+"tooltip.prompt.reset" = "恢复为默认系统提示词";
+"tooltip.prompt.done" = "保存提示词并关闭";
+"tooltip.prompt.cancel" = "放弃修改并关闭";
+"tooltip.permissions.reset" = "重置麦克风和语音识别的系统权限（需重启生效）";
+"tooltip.about.bilibili" = "在浏览器中打开 Bilibili 主页";
+"tooltip.about.github" = "在浏览器中打开 GitHub 仓库";
+
+/* Menu Tooltips */
+"tooltip.menu.punctuation" = "识别完成后自动在文字中添加标点符号";
+"tooltip.menu.llm" = "使用 LLM 修正识别错误并润色文字";
+"tooltip.menu.inputMode" = "选择语音输入的触发方式：单击或长按";
+"tooltip.menu.triggerKey" = "选择哪个按键触发语音输入";
+"tooltip.menu.audioInput" = "选择麦克风或输入设备";
+"tooltip.menu.lowerVolumeOnRecording" = "录音期间将系统音量降低 80%";
+"tooltip.menu.launchAtLogin" = "登录时自动启动原子微语";
+"tooltip.menu.help" = "查看权限状态和故障排除指南";
+"tooltip.menu.about" = "查看版本信息和相关链接";

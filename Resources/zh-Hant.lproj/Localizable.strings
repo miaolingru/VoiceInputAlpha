@@ -26,6 +26,7 @@
 "menu.settings" = "設定...";
 "menu.quit" = "退出";
 "common.ok" = "確定";
+"common.cancel" = "取消";
 
 /* Settings */
 "settings.title" = "LLM 文字優化設定";
@@ -92,6 +93,19 @@
 "error.sherpaRuntimeMissing" = "找不到 Sherpa 執行庫，請將 dylib 檔案放到：\n%@";
 "error.sherpaModelMissing" = "找不到 Sherpa 模型，請將模型檔案放到：\n%@";
 "error.sherpaLoadFailed" = "Sherpa 啟動失敗：%@";
+
+/* Sherpa 下載 */
+"sherpa.download.title" = "下載 Sherpa 模型";
+"sherpa.download.message" = "Sherpa 本機辨識需要下載模型檔案（約 149 MB），是否現在下載？";
+"sherpa.download.confirm" = "下載";
+"sherpa.downloading.start" = "正在準備下載 Sherpa 模型...";
+"sherpa.loadingModel" = "正在載入 Sherpa 模型...";
+"sherpa.downloading" = "正在下載 Sherpa 模型 (%d/%d)...";
+"sherpa.downloading.progress" = "正在下載 Sherpa 模型 (%d/%d)... %d%%";
+"sherpa.extracting" = "正在解壓 Sherpa 模型 (%d/%d)...";
+"sherpa.download.complete" = "Sherpa 模型下載完成 ✓";
+"sherpa.download.failed" = "Sherpa 模型下載失敗：%@";
+"sherpa.redownload.message" = "Sherpa 模型檔案缺失或損壞，是否重新下載？";
 
 /* Permissions */
 "permission.mic.title" = "需要麥克風權限";
@@ -193,3 +207,35 @@
 "update.error.download" = "下載失敗：%@";
 "update.error.install" = "安裝失敗：%@";
 "update.beta" = "測試版";
+"menu.lowerVolumeOnRecording" = "錄音時降低系統音量";
+"menu.lowerVolumeOnRecording.tooltip" = "錄音期間將系統音量降低 80%";
+
+/* Tooltips */
+"tooltip.provider.add" = "新增 LLM 服務商";
+"tooltip.provider.delete" = "刪除選中的 LLM 服務商";
+"tooltip.settings.provider" = "選擇 LLM 文字潤色服務商";
+"tooltip.settings.manage" = "開啟服務商列表，可新增、刪除或編輯";
+"tooltip.settings.baseURL" = "LLM 服務商的 API 位址";
+"tooltip.settings.apiKey" = "LLM 服務商的 API 金鑰";
+"tooltip.settings.model" = "使用的 LLM 模型名稱";
+"tooltip.settings.delay" = "辨識完成後等待指定時間再注入文字，避免過早注入不完整結果";
+"tooltip.settings.prompt" = "自定義傳送給 LLM 的系統提示詞";
+"tooltip.settings.test" = "使用目前設定測試 LLM API 連線";
+"tooltip.settings.save" = "儲存設定並關閉視窗";
+"tooltip.prompt.reset" = "恢復為預設系統提示詞";
+"tooltip.prompt.done" = "儲存提示詞並關閉";
+"tooltip.prompt.cancel" = "放棄修改並關閉";
+"tooltip.permissions.reset" = "重置麥克風和語音辨識的系統權限（需重新啟動）";
+"tooltip.about.bilibili" = "在瀏覽器中開啟 Bilibili 主頁";
+"tooltip.about.github" = "在瀏覽器中開啟 GitHub 專案";
+
+/* Menu Tooltips */
+"tooltip.menu.punctuation" = "辨識完成後自動在文字中加入標點符號";
+"tooltip.menu.llm" = "使用 LLM 修正辨識錯誤並潤飾文字";
+"tooltip.menu.inputMode" = "選擇語音輸入的觸發方式：單擊或長按";
+"tooltip.menu.triggerKey" = "選擇哪個按鍵觸發語音輸入";
+"tooltip.menu.audioInput" = "選擇麥克風或輸入裝置";
+"tooltip.menu.lowerVolumeOnRecording" = "錄音期間將系統音量降低 80%";
+"tooltip.menu.launchAtLogin" = "登入時自動啟動原子微語";
+"tooltip.menu.help" = "查看權限狀態和疑難排解指南";
+"tooltip.menu.about" = "查看版本資訊和相關連結";

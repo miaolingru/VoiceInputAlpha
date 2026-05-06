@@ -26,6 +26,8 @@ char *AtomVoiceSherpaFinish(AtomVoiceSherpaContext *context);
 
 void AtomVoiceSherpaDestroy(AtomVoiceSherpaContext *context);
 
+int32_t AtomVoiceSherpaResetStream(AtomVoiceSherpaContext *context);
+
 void AtomVoiceSherpaFreeString(char *text);
 
 AtomVoiceSherpaPunctuationContext *AtomVoiceSherpaPunctuationCreate(const char *lib_dir,

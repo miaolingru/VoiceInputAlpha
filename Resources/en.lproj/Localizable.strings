@@ -26,6 +26,7 @@
 "menu.settings" = "Settings...";
 "menu.quit" = "Quit";
 "common.ok" = "OK";
+"common.cancel" = "Cancel";
 
 /* Settings */
 "settings.title" = "LLM Refinement Settings";
@@ -92,6 +93,19 @@
 "error.sherpaRuntimeMissing" = "Sherpa runtime not found. Put the dylib files in:\n%@";
 "error.sherpaModelMissing" = "Sherpa model not found. Put the model files in:\n%@";
 "error.sherpaLoadFailed" = "Sherpa failed to start: %@";
+
+/* Sherpa Download */
+"sherpa.download.title" = "Download Sherpa Model";
+"sherpa.download.message" = "Sherpa local recognition requires downloading model files (~149 MB). Download now?";
+"sherpa.download.confirm" = "Download";
+"sherpa.downloading.start" = "Preparing to download Sherpa model...";
+"sherpa.loadingModel" = "Loading Sherpa model...";
+"sherpa.downloading" = "Downloading Sherpa model (%d/%d)...";
+"sherpa.downloading.progress" = "Downloading Sherpa model (%d/%d)... %d%%";
+"sherpa.extracting" = "Extracting Sherpa model (%d/%d)...";
+"sherpa.download.complete" = "Sherpa model download complete ✓";
+"sherpa.download.failed" = "Sherpa model download failed: %@";
+"sherpa.redownload.message" = "Sherpa model files are missing or corrupted. Re-download?";
 
 /* Permissions */
 "permission.mic.title" = "Microphone Access Required";
@@ -193,3 +207,35 @@
 "update.error.download" = "Download failed: %@";
 "update.error.install" = "Installation failed: %@";
 "update.beta" = "Beta";
+"menu.lowerVolumeOnRecording" = "Lower Volume While Recording";
+"menu.lowerVolumeOnRecording.tooltip" = "Reduce system volume by 80% during recording";
+
+/* Tooltips */
+"tooltip.provider.add" = "Add a new LLM provider";
+"tooltip.provider.delete" = "Delete the selected LLM provider";
+"tooltip.settings.provider" = "Choose an LLM provider for text refinement";
+"tooltip.settings.manage" = "Open the provider list to add, delete, or edit";
+"tooltip.settings.baseURL" = "API endpoint of the LLM provider";
+"tooltip.settings.apiKey" = "API key for the LLM provider";
+"tooltip.settings.model" = "LLM model name to use";
+"tooltip.settings.delay" = "Wait time after recognition before injecting text, to avoid injecting incomplete results";
+"tooltip.settings.prompt" = "Customize the system prompt sent to the LLM";
+"tooltip.settings.test" = "Test the LLM API connection with current settings";
+"tooltip.settings.save" = "Save settings and close the window";
+"tooltip.prompt.reset" = "Restore the default system prompt";
+"tooltip.prompt.done" = "Save the prompt and close";
+"tooltip.prompt.cancel" = "Discard changes and close";
+"tooltip.permissions.reset" = "Reset microphone and speech recognition permissions (requires restart)";
+"tooltip.about.bilibili" = "Open Bilibili page in browser";
+"tooltip.about.github" = "Open GitHub repository in browser";
+
+/* Menu Tooltips */
+"tooltip.menu.punctuation" = "Automatically add punctuation marks to recognized text";
+"tooltip.menu.llm" = "Use an LLM to fix recognition errors and polish text";
+"tooltip.menu.inputMode" = "Choose how to trigger voice input: tap or hold";
+"tooltip.menu.triggerKey" = "Choose which key triggers voice input";
+"tooltip.menu.audioInput" = "Select microphone or input device";
+"tooltip.menu.lowerVolumeOnRecording" = "Reduce system volume by 80% during recording";
+"tooltip.menu.launchAtLogin" = "Automatically start AtomVoice when you log in";
+"tooltip.menu.help" = "View permission status and troubleshooting guide";
+"tooltip.menu.about" = "View version info and links";

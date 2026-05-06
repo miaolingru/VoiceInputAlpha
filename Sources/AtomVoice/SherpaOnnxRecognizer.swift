@@ -3,6 +3,13 @@ import Cocoa
 import Foundation
 import SherpaOnnxShim
 
+enum SherpaOnnxStartFailureKind {
+    case missingRuntime
+    case missingModel
+    case invalidModel
+    case loadFailed
+}
+
 final class SherpaOnnxRecognizerController {
     static let modelName = "sherpa-onnx-streaming-zipformer-zh-14M-2023-02-23-mobile"
     static let punctuationModelName = "sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12-int8"
@@ -13,11 +20,26 @@ final class SherpaOnnxRecognizerController {
     private var onResult: ((String, Bool) -> Void)?
     private var lastText = ""
     private var finalText = ""
+    private(set) var lastStartFailureKind: SherpaOnnxStartFailureKind?
+    var isModelLoaded: Bool { context != nil }
 
     deinit {
         if let punctuationContext {
             AtomVoiceSherpaPunctuationDestroy(punctuationContext)
         }
+    }
+
+    /// 释放模型上下文以响应系统内存压力，下次录音时会重新加载
+    func releaseModels() {
+        if let context {
+            AtomVoiceSherpaDestroy(context)
+            self.context = nil
+        }
+        if let punctuationContext {
+            AtomVoiceSherpaPunctuationDestroy(punctuationContext)
+            self.punctuationContext = nil
+        }
+        print("[SherpaOnnx] 已释放模型上下文")
     }
 
     static var supportDirectory: URL {
@@ -53,21 +75,15 @@ final class SherpaOnnxRecognizerController {
     }
 
     func start(onResult: @escaping (String, Bool) -> Void) -> String? {
-        _ = stop()
-
-        guard FileManager.default.fileExists(atPath: Self.runtimeLibDirectory.appendingPathComponent("libsherpa-onnx-c-api.dylib").path),
-              FileManager.default.fileExists(atPath: Self.runtimeLibDirectory.appendingPathComponent("libonnxruntime.1.24.4.dylib").path)
-        else {
-            return loc("error.sherpaRuntimeMissing", Self.runtimeLibDirectory.path)
+        // 已有识别器上下文时直接复用，不重新加载模型
+        if context != nil {
+            self.onResult = onResult
+            lastText = ""
+            finalText = ""
+            return nil
         }
 
-        guard FileManager.default.fileExists(atPath: Self.modelDirectory.appendingPathComponent("encoder-epoch-99-avg-1.int8.onnx").path),
-              FileManager.default.fileExists(atPath: Self.modelDirectory.appendingPathComponent("decoder-epoch-99-avg-1.onnx").path),
-              FileManager.default.fileExists(atPath: Self.modelDirectory.appendingPathComponent("joiner-epoch-99-avg-1.int8.onnx").path),
-              FileManager.default.fileExists(atPath: Self.modelDirectory.appendingPathComponent("tokens.txt").path)
-        else {
-            return loc("error.sherpaModelMissing", Self.modelDirectory.path)
-        }
+        lastStartFailureKind = nil
 
         var errorBuffer = [CChar](repeating: 0, count: 2048)
         let created = Self.runtimeLibDirectory.path.withCString { libDir in
@@ -80,7 +96,19 @@ final class SherpaOnnxRecognizerController {
 
         guard let created else {
             let detail = String(cString: errorBuffer)
-            return loc("error.sherpaLoadFailed", detail.isEmpty ? "Unknown error" : detail)
+            let message = detail.isEmpty ? "Unknown error" : detail
+            let failureKind = Self.startFailureKind(for: message)
+            lastStartFailureKind = failureKind
+            switch failureKind {
+            case .missingRuntime:
+                return loc("error.sherpaRuntimeMissing", Self.runtimeLibDirectory.path)
+            case .missingModel:
+                return loc("error.sherpaModelMissing", Self.modelDirectory.path)
+            case .invalidModel:
+                return loc("error.sherpaLoadFailed", message)
+            case .loadFailed:
+                return loc("error.sherpaLoadFailed", message)
+            }
         }
 
         context = created
@@ -88,6 +116,20 @@ final class SherpaOnnxRecognizerController {
         lastText = ""
         finalText = ""
         return nil
+    }
+
+    private static func startFailureKind(for detail: String) -> SherpaOnnxStartFailureKind {
+        if detail.localizedCaseInsensitiveContains("runtime libraries not found") {
+            return .missingRuntime
+        }
+        if detail.localizedCaseInsensitiveContains("model files not found") {
+            return .missingModel
+        }
+        if detail.localizedCaseInsensitiveContains("Failed to create sherpa-onnx recognizer") ||
+            detail.localizedCaseInsensitiveContains("Failed to create sherpa-onnx stream") {
+            return .invalidModel
+        }
+        return .loadFailed
     }
 
     func accept(buffer: AVAudioPCMBuffer) {
@@ -122,8 +164,12 @@ final class SherpaOnnxRecognizerController {
                 finalText = String(cString: cText)
                 AtomVoiceSherpaFreeString(cText)
             }
-            AtomVoiceSherpaDestroy(context)
-            self.context = nil
+            // 重置 stream 以备下次录音，但保留识别器上下文避免重复加载模型
+            if AtomVoiceSherpaResetStream(context) == 0 {
+                print("[SherpaOnnx] 重置 stream 失败，销毁上下文下次重建")
+                AtomVoiceSherpaDestroy(context)
+                self.context = nil
+            }
             onResult = nil
             lastText = ""
             return finalText

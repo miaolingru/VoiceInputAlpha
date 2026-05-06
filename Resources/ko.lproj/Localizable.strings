@@ -26,6 +26,7 @@
 "menu.settings" = "설정...";
 "menu.quit" = "종료";
 "common.ok" = "확인";
+"common.cancel" = "취소";
 
 /* Settings */
 "settings.title" = "LLM 텍스트 최적화 설정";
@@ -92,6 +93,19 @@
 "error.sherpaRuntimeMissing" = "Sherpa 런타임을 찾을 수 없습니다. dylib 파일을 다음 위치에 넣어 주세요:\n%@";
 "error.sherpaModelMissing" = "Sherpa 모델을 찾을 수 없습니다. 모델 파일을 다음 위치에 넣어 주세요:\n%@";
 "error.sherpaLoadFailed" = "Sherpa 시작 실패: %@";
+
+/* Sherpa 다운로드 */
+"sherpa.download.title" = "Sherpa 모델 다운로드";
+"sherpa.download.message" = "Sherpa 로컬 인식에는 모델 파일 다운로드가 필요합니다(약 149 MB). 지금 다운로드하시겠습니까?";
+"sherpa.download.confirm" = "다운로드";
+"sherpa.downloading.start" = "Sherpa 모델 다운로드 준비 중...";
+"sherpa.loadingModel" = "Sherpa 모델 로드 중...";
+"sherpa.downloading" = "Sherpa 모델 다운로드 중 (%d/%d)...";
+"sherpa.downloading.progress" = "Sherpa 모델 다운로드 중 (%d/%d)... %d%%";
+"sherpa.extracting" = "Sherpa 모델 압축 해제 중 (%d/%d)...";
+"sherpa.download.complete" = "Sherpa 모델 다운로드 완료 ✓";
+"sherpa.download.failed" = "Sherpa 모델 다운로드 실패: %@";
+"sherpa.redownload.message" = "Sherpa 모델 파일이 없거나 손상되었습니다. 다시 다운로드하시겠습니까?";
 
 /* Permissions */
 "permission.mic.title" = "마이크 접근 권한이 필요합니다";
@@ -193,3 +207,35 @@
 "update.error.download" = "다운로드 실패: %@";
 "update.error.install" = "설치 실패: %@";
 "update.beta" = "베타";
+"menu.lowerVolumeOnRecording" = "녹음 중 시스템 볼륨 낮추기";
+"menu.lowerVolumeOnRecording.tooltip" = "녹음 중 시스템 볼륨을 80% 낮춤";
+
+/* Tooltips */
+"tooltip.provider.add" = "새 LLM 공급자 추가";
+"tooltip.provider.delete" = "선택한 LLM 공급자 삭제";
+"tooltip.settings.provider" = "LLM 텍스트 최적화 공급자 선택";
+"tooltip.settings.manage" = "공급자 목록 열기 (추가, 삭제, 편집 가능)";
+"tooltip.settings.baseURL" = "LLM 공급자의 API 엔드포인트";
+"tooltip.settings.apiKey" = "LLM 공급자의 API 키";
+"tooltip.settings.model" = "사용할 LLM 모델 이름";
+"tooltip.settings.delay" = "인식 후 텍스트를 입력하기까지 대기 시간 (불완전한 결과 입력 방지)";
+"tooltip.settings.prompt" = "LLM에 보내는 시스템 프롬프트 사용자 지정";
+"tooltip.settings.test" = "현재 설정으로 LLM API 연결 테스트";
+"tooltip.settings.save" = "설정을 저장하고 창 닫기";
+"tooltip.prompt.reset" = "기본 시스템 프롬프트로 복원";
+"tooltip.prompt.done" = "프롬프트를 저장하고 닫기";
+"tooltip.prompt.cancel" = "변경 사항을 취소하고 닫기";
+"tooltip.permissions.reset" = "마이크 및 음성 인식 권한 재설정 (재시작 필요)";
+"tooltip.about.bilibili" = "브라우저에서 Bilibili 페이지 열기";
+"tooltip.about.github" = "브라우저에서 GitHub 저장소 열기";
+
+/* Menu Tooltips */
+"tooltip.menu.punctuation" = "인식 완료 후 텍스트에 구두점 자동 추가";
+"tooltip.menu.llm" = "LLM을 사용하여 인식 오류 수정 및 텍스트 최적화";
+"tooltip.menu.inputMode" = "음성 입력 트리거 방식 선택: 클릭 또는 길게 누르기";
+"tooltip.menu.triggerKey" = "음성 입력을 트리거할 키 선택";
+"tooltip.menu.audioInput" = "마이크 또는 입력 장치 선택";
+"tooltip.menu.lowerVolumeOnRecording" = "녹음 중 시스템 볼륨을 80% 낮춤";
+"tooltip.menu.launchAtLogin" = "로그인 시 아톰보이스 자동 시작";
+"tooltip.menu.help" = "권한 상태 및 문제 해결 가이드 보기";
+"tooltip.menu.about" = "버전 정보 및 링크 보기";

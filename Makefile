@@ -1,6 +1,6 @@
 APP_NAME    = AtomVoice
 SRC_DIR     = Sources/AtomVoice
-VERSION     = 0.10.1
+VERSION     = 0.10.1 Beta 2
 BUILD_DIR   = .build/release
 DIST_DIR    = dist
 APP_BUNDLE  = $(BUILD_DIR)/$(APP_NAME).app
@@ -44,7 +44,7 @@ build-arm64:
 	@echo "→ Building Apple Silicon (arm64)..."
 	swift build -c release --arch arm64
 	$(call bundle_app,.build/arm64-apple-macosx/release/$(APP_NAME),$(DIST_DIR)/$(APP_NAME).app)
-	cd $(DIST_DIR) && zip -qr $(APP_NAME)-$(VERSION)-AppleSilicon.zip $(APP_NAME).app
+	cd $(DIST_DIR) && zip -qr "$(APP_NAME)-$(VERSION)-AppleSilicon.zip" $(APP_NAME).app
 	rm -rf $(DIST_DIR)/$(APP_NAME).app
 	@echo "  Apple Silicon done"
 
@@ -52,7 +52,7 @@ build-x86_64:
 	@echo "→ Building Intel (x86_64)..."
 	swift build -c release --arch x86_64
 	$(call bundle_app,.build/x86_64-apple-macosx/release/$(APP_NAME),$(DIST_DIR)/$(APP_NAME).app)
-	cd $(DIST_DIR) && zip -qr $(APP_NAME)-$(VERSION)-Intel.zip $(APP_NAME).app
+	cd $(DIST_DIR) && zip -qr "$(APP_NAME)-$(VERSION)-Intel.zip" $(APP_NAME).app
 	rm -rf $(DIST_DIR)/$(APP_NAME).app
 	@echo "  Intel done"
 
@@ -64,7 +64,7 @@ build-universal:
 		-output $(DIST_DIR)/$(APP_NAME)-universal-bin
 	$(call bundle_app,$(DIST_DIR)/$(APP_NAME)-universal-bin,$(DIST_DIR)/$(APP_NAME).app)
 	rm -f $(DIST_DIR)/$(APP_NAME)-universal-bin
-	cd $(DIST_DIR) && zip -qr $(APP_NAME)-$(VERSION)-Universal.zip $(APP_NAME).app
+	cd $(DIST_DIR) && zip -qr "$(APP_NAME)-$(VERSION)-Universal.zip" $(APP_NAME).app
 	rm -rf $(DIST_DIR)/$(APP_NAME).app
 	@echo "  Universal done"
 

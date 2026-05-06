@@ -5,7 +5,7 @@ final class AboutWindowController: NSObject {
 
     func showWindow() {
         if let w = window {
-            AppDelegate.bringToFront(w)
+            AppDelegate.bringToFrontInCurrentSpace(w)
             return
         }
         buildWindow()
@@ -23,6 +23,8 @@ final class AboutWindowController: NSObject {
         w.titlebarAppearsTransparent = true
         w.titleVisibility = .hidden
         w.isMovableByWindowBackground = true
+        w.level = .floating
+        w.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary, .transient]
 
         guard let cv = w.contentView else { return }
 
@@ -100,13 +102,15 @@ final class AboutWindowController: NSObject {
             svgName: "bilibili",
             fallbackSymbol: "play.circle",
             url: "https://space.bilibili.com/404899",
-            accessibilityLabel: "Bilibili"
+            accessibilityLabel: "Bilibili",
+            toolTip: loc("tooltip.about.bilibili")
         ))
         linksRow.addArrangedSubview(makeLinkIcon(
             svgName: "github",
             fallbackSymbol: "chevron.left.forwardslash.chevron.right",
             url: "https://github.com/BlackSquarre/AtomVoice",
-            accessibilityLabel: "GitHub"
+            accessibilityLabel: "GitHub",
+            toolTip: loc("tooltip.about.github")
         ))
         vStack.addArrangedSubview(linksRow)
         vStack.setCustomSpacing(20, after: linksRow)
@@ -124,17 +128,19 @@ final class AboutWindowController: NSObject {
         self.window = w
         w.delegate = self
         w.center()
-        AppDelegate.bringToFront(w)
+        AppDelegate.bringToFrontInCurrentSpace(w)
     }
 
     // MARK: - Icon-only link button
 
     private func makeLinkIcon(svgName: String, fallbackSymbol: String,
-                               url: String, accessibilityLabel: String) -> NSView {
+                               url: String, accessibilityLabel: String,
+                               toolTip: String) -> NSView {
         let btn = NSButton(title: "", target: self, action: #selector(openLink(_:)))
         btn.isBordered = false
         btn.identifier = NSUserInterfaceItemIdentifier(url)
         btn.setAccessibilityLabel(accessibilityLabel)
+        btn.toolTip = toolTip
         btn.translatesAutoresizingMaskIntoConstraints = false
         btn.widthAnchor.constraint(equalToConstant: 26).isActive = true
         btn.heightAnchor.constraint(equalToConstant: 26).isActive = true
